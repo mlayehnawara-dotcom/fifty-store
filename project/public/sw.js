@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'fifty-store-cache-v2';
+const CACHE_NAME = 'fifty-store-cache-v3';
 const OFFLINE_URL = '/offline.html';
 const PRE_CACHE = ['/', '/offline.html', '/manifest.webmanifest', '/fifty-store-logo.png'];
 
@@ -20,11 +20,24 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  const requestUrl = new URL(event.request.url);
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+  const isAssetRequest = isSameOrigin && requestUrl.pathname.startsWith('/assets/');
+
+  // Avoid caching hashed JS/CSS assets in the SW cache to reduce stale chunk mismatch after deploys.
+  if (isAssetRequest) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        if (isSameOrigin && response.ok) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        }
+
         return response;
       })
       .catch(async () => {

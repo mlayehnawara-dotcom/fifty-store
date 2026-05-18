@@ -1,7 +1,7 @@
 ﻿import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Production build is split intentionally so users download only what each route needs.
+// Keep React + charting in the same vendor chunk to avoid manualChunks load-order bugs.
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
@@ -9,16 +9,18 @@ export default defineConfig({
   },
   build: {
     cssCodeSplit: true,
-    modulePreload: {
-      polyfill: false,
-    },
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
-          if (id.includes('react-dom') || id.includes('react-router-dom') || id.includes('react/')) {
-            return 'react-core';
+          if (
+            id.includes('react') ||
+            id.includes('react-dom') ||
+            id.includes('react-router-dom') ||
+            id.includes('recharts')
+          ) {
+            return 'vendor-react';
           }
 
           if (id.includes('framer-motion') || id.includes('gsap') || id.includes('lenis')) {
@@ -27,10 +29,6 @@ export default defineConfig({
 
           if (id.includes('@supabase/supabase-js')) {
             return 'supabase';
-          }
-
-          if (id.includes('recharts')) {
-            return 'charts';
           }
 
           if (id.includes('lucide-react') || id.includes('react-hot-toast') || id.includes('react-helmet-async')) {
