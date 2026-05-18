@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Seo from '../components/Seo';
 import { useCart } from '../context/CartContext';
 import { STORE_INFO, tunisianCities } from '../data/store';
+import { createSupabaseOrder } from '../services/orderService';
 import { formatPrice } from '../utils/format';
 import { buildWhatsAppOrderMessage, openWhatsApp } from '../utils/whatsapp';
 
@@ -51,7 +52,7 @@ export default function CheckoutPage() {
     return true;
   };
 
-  const handleWhatsAppCheckout = () => {
+  const handleWhatsAppCheckout = async () => {
     if (!validateForm()) {
       return;
     }
@@ -68,18 +69,48 @@ export default function CheckoutPage() {
       orderTotal,
     );
 
+    const orderSaved = await createSupabaseOrder({
+      fullName: form.fullName,
+      phone: form.phone,
+      city: form.city,
+      address: form.address,
+      notes: form.notes,
+      items,
+      total: orderTotal,
+      paymentMethod: STORE_INFO.paymentLabel,
+      deliveryMethod: STORE_INFO.deliveryLabel,
+    });
+
     openWhatsApp(whatsappMessage);
     toast.success('Commande WhatsApp ouverte');
+    if (orderSaved) {
+      toast.success('Commande enregistree sur le serveur.');
+    }
     clearCart(true);
     setCompleted(true);
   };
 
-  const handleStandardConfirmation = () => {
+  const handleStandardConfirmation = async () => {
     if (!validateForm()) {
       return;
     }
 
+    const orderSaved = await createSupabaseOrder({
+      fullName: form.fullName,
+      phone: form.phone,
+      city: form.city,
+      address: form.address,
+      notes: form.notes,
+      items,
+      total: orderTotal,
+      paymentMethod: STORE_INFO.paymentLabel,
+      deliveryMethod: STORE_INFO.deliveryLabel,
+    });
+
     toast.success('Commande enregistree. Notre equipe vous contacte sur WhatsApp.');
+    if (orderSaved) {
+      toast.success('Commande synchronisee avec la base de donnees.');
+    }
     clearCart(true);
     setCompleted(true);
   };

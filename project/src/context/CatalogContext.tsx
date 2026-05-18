@@ -1,6 +1,6 @@
 ﻿/* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { Category, Product } from '../data/products';
+import { categories as fallbackCategories, products as fallbackProducts, type Category, type Product } from '../data/products';
 import {
   fetchCatalogCategories,
   fetchCatalogProducts,
@@ -19,8 +19,8 @@ interface CatalogContextType {
 const CatalogContext = createContext<CatalogContextType | null>(null);
 
 export function CatalogProvider({ children }: { children: ReactNode }) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<Product[]>(fallbackProducts);
+  const [categories, setCategories] = useState<Category[]>(fallbackCategories);
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState<CatalogSource>('local');
 

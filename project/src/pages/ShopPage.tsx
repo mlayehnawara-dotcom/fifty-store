@@ -1,26 +1,34 @@
-﻿import { ChevronDown, Filter, Search, SlidersHorizontal, X } from 'lucide-react';
+﻿import { ChevronDown, Filter, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import CompareStrip from '../components/CompareStrip';
 import ProductCard from '../components/ProductCard';
 import Seo from '../components/Seo';
 import ProductCardSkeleton from '../components/ui/ProductCardSkeleton';
-import { categories, products } from '../data/products';
-
-const minCatalogPrice = Math.min(...products.map((product) => product.price));
-const maxCatalogPrice = Math.max(...products.map((product) => product.price));
+import { useCatalog } from '../context/CatalogContext';
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'rating';
 
 export default function ShopPage() {
+  const { products, categories, loading } = useCatalog();
   const [searchParams] = useSearchParams();
   const searchFromUrl = searchParams.get('q') ?? '';
 
-  const [loading, setLoading] = useState(true);
+  const minCatalogPrice = useMemo(() => {
+    if (products.length === 0) return 0;
+    return Math.min(...products.map((product) => product.price));
+  }, [products]);
+
+  const maxCatalogPrice = useMemo(() => {
+    if (products.length === 0) return 0;
+    return Math.max(...products.map((product) => product.price));
+  }, [products]);
+
   const [searchTerm, setSearchTerm] = useState(searchFromUrl);
   const [selectedCategory, setSelectedCategory] = useState<'all' | string>('all');
   const [selectedBrand, setSelectedBrand] = useState<'all' | string>('all');
-  const [minPrice, setMinPrice] = useState(minCatalogPrice);
-  const [maxPrice, setMaxPrice] = useState(maxCatalogPrice);
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(0);
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -29,13 +37,13 @@ export default function ShopPage() {
   }, [searchFromUrl]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 500);
-    return () => window.clearTimeout(timer);
-  }, []);
+    setMinPrice(minCatalogPrice);
+    setMaxPrice(maxCatalogPrice);
+  }, [minCatalogPrice, maxCatalogPrice]);
 
   const brandOptions = useMemo(() => {
     return ['all', ...Array.from(new Set(products.map((product) => product.brand))).sort((a, b) => a.localeCompare(b))];
-  }, []);
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -63,7 +71,7 @@ export default function ShopPage() {
       default:
         return [...result].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
-  }, [searchTerm, selectedCategory, selectedBrand, minPrice, maxPrice, sortBy]);
+  }, [products, searchTerm, selectedCategory, selectedBrand, minPrice, maxPrice, sortBy]);
 
   const hasActiveFilters =
     selectedCategory !== 'all' ||
@@ -85,7 +93,7 @@ export default function ShopPage() {
   const FiltersContent = (
     <div className="space-y-5">
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-fuchsia-500">Recherche</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-cyan-400">Recherche</p>
         <div className="flex items-center gap-2 rounded-xl border border-soft bg-surface-strong px-3 py-2">
           <Search size={16} className="text-muted" />
           <input
@@ -98,7 +106,7 @@ export default function ShopPage() {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-fuchsia-500">Categorie</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-cyan-400">Categorie</p>
         <div className="grid grid-cols-1 gap-2">
           {categories.map((category) => (
             <button
@@ -107,8 +115,8 @@ export default function ShopPage() {
               onClick={() => setSelectedCategory(category.id)}
               className={`rounded-xl px-3 py-2 text-left text-sm font-medium transition ${
                 selectedCategory === category.id
-                  ? 'bg-fuchsia-600 text-white'
-                  : 'border border-soft bg-surface-strong text-secondary hover:border-fuchsia-500/40'
+                  ? 'bg-cyan-600 text-white'
+                  : 'border border-soft bg-surface-strong text-secondary hover:border-cyan-500/40'
               }`}
             >
               {category.name}
@@ -118,7 +126,7 @@ export default function ShopPage() {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-fuchsia-500">Marque</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-cyan-400">Marque</p>
         <div className="relative">
           <select
             value={selectedBrand}
@@ -136,7 +144,7 @@ export default function ShopPage() {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-fuchsia-500">Prix (TND)</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-cyan-400">Prix (TND)</p>
         <div className="grid grid-cols-2 gap-2">
           <input
             type="number"
@@ -156,7 +164,7 @@ export default function ShopPage() {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-fuchsia-500">Tri</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.15em] text-cyan-400">Tri</p>
         <div className="relative">
           <select
             value={sortBy}
@@ -204,6 +212,8 @@ export default function ShopPage() {
             </button>
           </div>
 
+          <CompareStrip />
+
           {mobileFiltersOpen ? <div className="glass-card mb-5 rounded-3xl p-5 lg:hidden">{FiltersContent}</div> : null}
 
           <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
@@ -221,11 +231,16 @@ export default function ShopPage() {
                 <p className="text-secondary">
                   <span className="font-bold text-primary">{filteredProducts.length}</span> produit(s) trouves
                 </p>
-                {hasActiveFilters ? (
-                  <button type="button" onClick={clearFilters} className="inline-flex items-center gap-1 font-semibold text-fuchsia-500">
-                    <X size={14} /> Effacer
-                  </button>
-                ) : null}
+                <div className="inline-flex items-center gap-3">
+                  <span className="inline-flex items-center gap-1 text-xs text-cyan-400">
+                    <Sparkles size={13} /> Experience premium
+                  </span>
+                  {hasActiveFilters ? (
+                    <button type="button" onClick={clearFilters} className="inline-flex items-center gap-1 font-semibold text-cyan-400">
+                      <X size={14} /> Effacer
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               {loading ? (
@@ -244,7 +259,9 @@ export default function ShopPage() {
                 <div className="glass-card rounded-3xl p-10 text-center">
                   <Search size={30} className="mx-auto text-muted" />
                   <h2 className="mt-3 text-xl font-bold text-primary">Aucun produit trouve</h2>
-                  <p className="mt-2 text-sm text-muted">Essayez un autre nom, une marque differente ou un intervalle de prix plus large.</p>
+                  <p className="mt-2 text-sm text-muted">
+                    Essayez un autre nom, une marque differente ou un intervalle de prix plus large.
+                  </p>
                   <button type="button" onClick={clearFilters} className="premium-btn mt-5">
                     Reinitialiser les filtres
                   </button>
@@ -257,4 +274,3 @@ export default function ShopPage() {
     </>
   );
 }
-

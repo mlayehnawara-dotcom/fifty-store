@@ -25,7 +25,7 @@ export default function Footer() {
 
           <div className="mt-5 flex items-center gap-3">
             <a
-              href="https://www.facebook.com/share/1GEHwP7UHq/?mibextid=wwXIfr"
+              href={STORE_INFO.facebookUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="premium-btn-secondary !p-2"
@@ -33,7 +33,7 @@ export default function Footer() {
               <Facebook size={16} />
             </a>
             <a
-              href="https://www.instagram.com/fifty_store_jemmel?igsh=MXJ1YnV2d2o2enZpaQ=="
+              href={STORE_INFO.instagramUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="premium-btn-secondary !p-2"

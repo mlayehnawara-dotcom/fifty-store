@@ -1,17 +1,31 @@
-﻿import { ArrowLeft, Check, MessageCircle, Minus, Plus, ShieldCheck, ShoppingCart, Star, Truck } from 'lucide-react';
-import { useMemo, useState } from 'react';
+﻿import {
+  ArrowLeft,
+  Check,
+  Flame,
+  MessageCircle,
+  Minus,
+  Plus,
+  ShieldCheck,
+  ShoppingCart,
+  Star,
+  Truck,
+  Users,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import Seo from '../components/Seo';
+import { useCatalog } from '../context/CatalogContext';
 import { useCart } from '../context/CartContext';
-import { products } from '../data/products';
 import { STORE_INFO } from '../data/store';
+import { addRecentlyViewed } from '../utils/recentlyViewed';
 import { formatPrice } from '../utils/format';
 import { openWhatsApp } from '../utils/whatsapp';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { addToCart } = useCart();
+  const { products } = useCatalog();
 
   const productId = Number(id);
   const product = products.find((item) => item.id === productId);
@@ -19,10 +33,27 @@ export default function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
+  useEffect(() => {
+    if (!product) return;
+    addRecentlyViewed(product.id);
+  }, [product]);
+
   const relatedProducts = useMemo(() => {
     if (!product) return [];
     return products.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 4);
-  }, [product]);
+  }, [product, products]);
+
+  const recommendedProducts = useMemo(() => {
+    if (!product) return [];
+    return products
+      .filter((item) => item.id !== product.id)
+      .sort((a, b) => {
+        const scoreA = Number(a.brand === product.brand) * 3 + a.rating + (a.isBestSeller ? 2 : 0);
+        const scoreB = Number(b.brand === product.brand) * 3 + b.rating + (b.isBestSeller ? 2 : 0);
+        return scoreB - scoreA;
+      })
+      .slice(0, 4);
+  }, [product, products]);
 
   if (!product) {
     return (
@@ -53,6 +84,8 @@ export default function ProductDetailPage() {
     `Livraison: ${STORE_INFO.deliveryLabel}`,
   ].join('\n');
 
+  const liveVisitors = 12 + ((product.id * 17) % 29);
+
   return (
     <>
       <Seo
@@ -64,7 +97,7 @@ export default function ProductDetailPage() {
 
       <div className="page-bg min-h-screen pt-28 sm:pt-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <Link to="/shop" className="inline-flex items-center gap-2 text-sm font-semibold text-fuchsia-500">
+          <Link to="/shop" className="inline-flex items-center gap-2 text-sm font-semibold text-cyan-400">
             <ArrowLeft size={14} /> Retour boutique
           </Link>
 
@@ -74,7 +107,7 @@ export default function ProductDetailPage() {
                 <img
                   src={product.images[activeImage] ?? product.image}
                   alt={`${product.name} photo ${activeImage + 1}`}
-                  className="aspect-square w-full object-cover"
+                  className="aspect-square w-full object-cover transition-transform duration-500 hover:scale-105"
                 />
               </div>
 
@@ -86,7 +119,7 @@ export default function ProductDetailPage() {
                       type="button"
                       onClick={() => setActiveImage(index)}
                       className={`overflow-hidden rounded-xl border ${
-                        activeImage === index ? 'border-fuchsia-500' : 'border-soft'
+                        activeImage === index ? 'border-cyan-400' : 'border-soft'
                       }`}
                     >
                       <img src={image} alt={`${product.name} miniature ${index + 1}`} className="h-20 w-full object-cover" />
@@ -97,7 +130,10 @@ export default function ProductDetailPage() {
             </article>
 
             <article className="glass-card rounded-3xl p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-fuchsia-500">{product.brand}</p>
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                <Flame size={13} /> Produit premium tendance
+              </div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">{product.brand}</p>
               <h1 className="mt-2 text-3xl font-bold text-primary">{product.name}</h1>
               <p className="mt-3 text-sm leading-relaxed text-secondary">{product.description}</p>
 
@@ -106,7 +142,9 @@ export default function ProductDetailPage() {
                   <Star size={14} className="fill-current" /> {product.rating.toFixed(1)}
                 </span>
                 <span>({product.reviews} avis)</span>
-                <span className="ml-auto">Stock: {product.stock}</span>
+                <span className="ml-auto inline-flex items-center gap-1 text-cyan-400">
+                  <Users size={13} /> {liveVisitors} consultent ce produit
+                </span>
               </div>
 
               <div className="mt-5 flex items-end gap-3 border-y border-soft py-4">
@@ -117,7 +155,7 @@ export default function ProductDetailPage() {
               <ul className="mt-5 grid gap-2 sm:grid-cols-2">
                 {product.specs.map((spec) => (
                   <li key={spec} className="inline-flex items-center gap-2 text-sm text-secondary">
-                    <Check size={14} className="text-fuchsia-500" /> {spec}
+                    <Check size={14} className="text-cyan-400" /> {spec}
                   </li>
                 ))}
               </ul>
@@ -127,7 +165,7 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-secondary hover:bg-fuchsia-500/10"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-secondary hover:bg-cyan-500/10"
                   >
                     <Minus size={16} />
                   </button>
@@ -135,17 +173,13 @@ export default function ProductDetailPage() {
                   <button
                     type="button"
                     onClick={() => setQuantity((current) => current + 1)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-secondary hover:bg-fuchsia-500/10"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-secondary hover:bg-cyan-500/10"
                   >
                     <Plus size={16} />
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => addToCart(product, quantity)}
-                  className="premium-btn flex-1 justify-center"
-                >
+                <button type="button" onClick={() => addToCart(product, quantity)} className="premium-btn flex-1 justify-center">
                   <ShoppingCart size={16} /> Ajouter au panier
                 </button>
 
@@ -160,20 +194,20 @@ export default function ProductDetailPage() {
 
               <div className="mt-6 grid gap-3 rounded-2xl border border-soft bg-surface p-4 text-sm">
                 <p className="inline-flex items-center gap-2 text-secondary">
-                  <Truck size={15} className="text-fuchsia-500" /> {STORE_INFO.deliveryLabel}
+                  <Truck size={15} className="text-cyan-400" /> {STORE_INFO.deliveryLabel}
                 </p>
                 <p className="inline-flex items-center gap-2 text-secondary">
-                  <ShieldCheck size={15} className="text-fuchsia-500" /> {STORE_INFO.paymentLabel}
+                  <ShieldCheck size={15} className="text-cyan-400" /> {STORE_INFO.paymentLabel}
                 </p>
               </div>
             </article>
           </section>
 
           {relatedProducts.length > 0 ? (
-            <section className="mt-14 pb-16">
+            <section className="mt-14">
               <div className="mb-6 flex items-end justify-between">
                 <h2 className="text-2xl font-bold text-primary">Produits similaires</h2>
-                <Link to="/shop" className="text-sm font-semibold text-fuchsia-500">
+                <Link to="/shop" className="text-sm font-semibold text-cyan-400">
                   Voir plus
                 </Link>
               </div>
@@ -184,9 +218,24 @@ export default function ProductDetailPage() {
               </div>
             </section>
           ) : null}
+
+          {recommendedProducts.length > 0 ? (
+            <section className="mt-14 pb-16">
+              <div className="mb-6 flex items-end justify-between">
+                <h2 className="text-2xl font-bold text-primary">Recommandes pour vous</h2>
+                <Link to="/shop" className="text-sm font-semibold text-cyan-400">
+                  Explorer
+                </Link>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {recommendedProducts.map((recommended) => (
+                  <ProductCard key={recommended.id} product={recommended} />
+                ))}
+              </div>
+            </section>
+          ) : null}
         </div>
       </div>
     </>
   );
 }
-

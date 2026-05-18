@@ -1,30 +1,59 @@
-﻿import { ArrowRight, MessageCircle, ShieldCheck, Star } from 'lucide-react';
+﻿import { ArrowRight, Flame, MessageCircle, ShieldCheck, Star, TrendingUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import DeliverySection from '../components/DeliverySection';
 import ProductCard from '../components/ProductCard';
 import Seo from '../components/Seo';
 import StoreLocation from '../components/StoreLocation';
+import AnimatedCounter from '../components/animations/AnimatedCounter';
+import FloatingParticles from '../components/animations/FloatingParticles';
+import MagneticButton from '../components/animations/MagneticButton';
+import Reveal from '../components/animations/Reveal';
 import ProductCardSkeleton from '../components/ui/ProductCardSkeleton';
-import { faqs, products, testimonials } from '../data/products';
+import { useCatalog } from '../context/CatalogContext';
+import { faqs, testimonials } from '../data/products';
 import { STORE_INFO } from '../data/store';
+import { readRecentlyViewed } from '../utils/recentlyViewed';
 
 export default function HomePage() {
-  const [loading, setLoading] = useState(true);
+  const { products, loading } = useCatalog();
   const [now, setNow] = useState<Date>(() => new Date());
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 550);
-    return () => window.clearTimeout(timer);
-  }, []);
+  const [recentIds, setRecentIds] = useState<number[]>([]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
-  const bestSellers = useMemo(() => products.filter((product) => product.isBestSeller).slice(0, 8), []);
-  const newArrivals = useMemo(() => products.filter((product) => product.isNew).slice(0, 4), []);
+  useEffect(() => {
+    setRecentIds(readRecentlyViewed());
+  }, []);
+
+  const bestSellers = useMemo(() => products.filter((product) => product.isBestSeller).slice(0, 8), [products]);
+  const newArrivals = useMemo(() => products.filter((product) => product.isNew).slice(0, 4), [products]);
+  const trendingProducts = useMemo(
+    () =>
+      [...products]
+        .sort((a, b) => b.rating * 100 + b.reviews - (a.rating * 100 + a.reviews))
+        .slice(0, 4),
+    [products],
+  );
+
+  const recentlyViewedProducts = useMemo(
+    () =>
+      recentIds
+        .map((id) => products.find((product) => product.id === id))
+        .filter((product): product is (typeof products)[number] => Boolean(product))
+        .slice(0, 4),
+    [recentIds, products],
+  );
+
+  const endOfDay = new Date(now);
+  endOfDay.setHours(23, 59, 59, 999);
+  const diffMs = Math.max(0, endOfDay.getTime() - now.getTime());
+  const hours = Math.floor(diffMs / 3_600_000);
+  const minutes = Math.floor((diffMs % 3_600_000) / 60_000);
+  const seconds = Math.floor((diffMs % 60_000) / 1000);
 
   return (
     <>
@@ -36,78 +65,96 @@ export default function HomePage() {
 
       <div className="page-bg min-h-screen pt-28 sm:pt-32">
         <section className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="relative overflow-hidden rounded-[2rem] border border-soft bg-surface-strong p-8 shadow-premium sm:p-12">
+          <div className="frost-panel futuristic-border relative overflow-hidden rounded-[2rem] p-8 shadow-premium sm:p-12">
+            <div className="ultra-grid-bg absolute inset-0 opacity-35" />
+            <FloatingParticles count={20} className="z-[1]" />
             <div className="hero-ambient absolute inset-0" />
-            <div className="absolute -left-28 top-0 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-3xl" />
+            <div className="absolute -left-28 top-0 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl" />
             <div className="absolute -right-28 bottom-0 h-72 w-72 rounded-full bg-orange-400/25 blur-3xl" />
-            <div className="absolute left-1/3 top-16 h-44 w-44 rounded-full bg-cyan-400/20 blur-3xl" />
+            <div className="absolute left-1/3 top-16 h-44 w-44 rounded-full bg-fuchsia-400/20 blur-3xl" />
 
             <div className="relative z-10 grid items-center gap-10 lg:grid-cols-2">
               <div>
-                <p
-                  className="hero-fade-up hero-badge-pulse inline-flex items-center gap-2 rounded-full border border-fuchsia-500/40 bg-fuchsia-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-fuchsia-500"
-                  style={{ animationDelay: '40ms' }}
-                >
-                  🚚 Livraison rapide sur toute la Tunisie
-                </p>
+                <Reveal>
+                  <p className="hero-badge-pulse inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-cyan-300">
+                    🚚 Livraison rapide sur toute la Tunisie
+                  </p>
+                </Reveal>
 
-                <h1
-                  className="hero-fade-up mt-5 text-4xl font-bold leading-tight text-primary sm:text-5xl lg:text-6xl"
-                  style={{ animationDelay: '140ms' }}
-                >
-                  Smartphones & accessoires premium,
-                  <br />
-                  <span className="hero-gradient-text hero-electric-glow">livrés partout en Tunisie</span>
-                </h1>
+                <Reveal delay={0.08}>
+                  <h1 className="mt-5 text-4xl font-bold leading-tight text-primary sm:text-5xl lg:text-6xl">
+                    Smartphones & accessoires premium,
+                    <br />
+                    <span className="hero-gradient-text hero-electric-glow">livrés partout en Tunisie</span>
+                  </h1>
+                </Reveal>
 
-                <p
-                  className="hero-fade-up mt-5 max-w-xl text-base leading-relaxed text-secondary sm:text-lg"
-                  style={{ animationDelay: '240ms' }}
-                >
-                  Découvrez les meilleurs smartphones, chargeurs, coques, écouteurs et accessoires gaming avec
-                  prix compétitifs en TND, paiement à la livraison et commande rapide via WhatsApp.
-                </p>
+                <Reveal delay={0.16}>
+                  <p className="mt-5 max-w-xl text-base leading-relaxed text-secondary sm:text-lg">
+                    Découvrez les meilleurs smartphones, chargeurs, coques, écouteurs et accessoires gaming avec
+                    prix compétitifs en TND, paiement à la livraison et commande rapide via WhatsApp.
+                  </p>
+                </Reveal>
 
-                <div className="hero-fade-up mt-7 flex flex-wrap gap-3" style={{ animationDelay: '320ms' }}>
-                  <Link to="/shop" className="premium-btn hero-cta-glow">
-                    Explorer les offres
-                    <ArrowRight size={16} />
-                  </Link>
-                  <a
-                    href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="premium-btn-secondary"
-                  >
-                    <MessageCircle size={16} /> Commander sur WhatsApp
-                  </a>
-                </div>
+                <Reveal delay={0.24}>
+                  <div className="mt-7 flex flex-wrap gap-3">
+                    <MagneticButton>
+                      <Link to="/shop" className="premium-btn hero-cta-glow">
+                        Explorer les offres
+                        <ArrowRight size={16} />
+                      </Link>
+                    </MagneticButton>
 
-                <div className="hero-fade-up mt-8 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2" style={{ animationDelay: '420ms' }}>
-                  <div className="glass-card hero-card-pop rounded-2xl p-4 text-center">
-                    <p className="text-2xl font-extrabold text-primary">500+</p>
-                    <p className="text-muted">Clients satisfaits</p>
+                    <MagneticButton>
+                      <a
+                        href={`https://wa.me/${STORE_INFO.whatsappNumber}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="premium-btn-secondary"
+                      >
+                        <MessageCircle size={16} /> Commander sur WhatsApp
+                      </a>
+                    </MagneticButton>
                   </div>
-                  <div className="glass-card hero-card-pop rounded-2xl p-4 text-center" style={{ animationDelay: '560ms' }}>
-                    <p className="text-2xl font-extrabold text-primary">22</p>
-                    <p className="text-muted">Produits disponibles</p>
-                  </div>
-                </div>
+                </Reveal>
 
-                <div className="hero-fade-up mt-4 inline-flex items-center gap-2 rounded-full border border-soft bg-surface-strong px-4 py-2 text-xs font-semibold text-secondary" style={{ animationDelay: '520ms' }}>
-                  Date: {new Intl.DateTimeFormat('fr-TN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)}
-                  <span className="text-muted">|</span>
-                  Heure:{' '}
-                  {new Intl.DateTimeFormat('fr-TN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  }).format(now)}
-                </div>
+                <Reveal delay={0.32}>
+                  <div className="mt-8 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+                    <div className="glass-card hero-card-pop rounded-2xl p-4 text-center">
+                      <p className="text-2xl font-extrabold text-primary">
+                        <AnimatedCounter to={500} suffix="+" />
+                      </p>
+                      <p className="text-muted">Clients satisfaits</p>
+                    </div>
+                    <div className="glass-card hero-card-pop rounded-2xl p-4 text-center">
+                      <p className="text-2xl font-extrabold text-primary">24-72h</p>
+                      <p className="text-muted">livraison</p>
+                    </div>
+                    <div className="glass-card hero-card-pop rounded-2xl p-4 text-center">
+                      <p className="text-2xl font-extrabold text-primary">
+                        <AnimatedCounter to={products.length || 22} />
+                      </p>
+                      <p className="text-muted">Produits premium</p>
+                    </div>
+                  </div>
+                </Reveal>
+
+                <Reveal delay={0.42}>
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-soft bg-surface-strong px-4 py-2 text-xs font-semibold text-secondary">
+                    Date: {new Intl.DateTimeFormat('fr-TN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(now)}
+                    <span className="text-muted">|</span>
+                    Heure:{' '}
+                    {new Intl.DateTimeFormat('fr-TN', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    }).format(now)}
+                  </div>
+                </Reveal>
               </div>
 
-              <div className="hero-fade-up relative" style={{ animationDelay: '260ms' }}>
-                <div className="hero-image-float hero-image-glow overflow-hidden rounded-3xl border border-soft">
+              <Reveal delay={0.16} className="relative">
+                <div className="hero-image-float hero-image-glow animated-light-sheen overflow-hidden rounded-3xl border border-soft">
                   <div className="relative flex min-h-[360px] items-center justify-center bg-gradient-to-br from-slate-100 via-white to-fuchsia-100 dark:from-slate-900 dark:via-slate-800 dark:to-fuchsia-950/40 sm:min-h-[430px]">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.14),transparent_56%)]" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(56,189,248,0.15),transparent_40%)]" />
@@ -131,9 +178,26 @@ export default function HomePage() {
                 <div className="hero-float-tag absolute right-4 -bottom-5 hidden rounded-2xl border border-soft bg-surface-strong px-4 py-3 text-xs font-semibold text-primary shadow-premium sm:block [animation-delay:900ms]">
                   Produits garantis
                 </div>
-              </div>
+              </Reveal>
             </div>
           </div>
+        </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-7 sm:px-6">
+          <Reveal>
+            <article className="flash-countdown premium-hover-depth flex flex-wrap items-center justify-between gap-3 rounded-3xl px-5 py-4">
+              <div>
+                <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-fuchsia-500">
+                  <Flame size={13} /> Flash sale du jour
+                </p>
+                <h2 className="mt-1 text-xl font-bold text-primary">Offres dynamiques jusqu'à minuit</h2>
+              </div>
+
+              <div className="rounded-2xl border border-soft bg-surface-strong px-4 py-2 text-sm font-semibold text-primary">
+                {String(hours).padStart(2, '0')}h : {String(minutes).padStart(2, '0')}m : {String(seconds).padStart(2, '0')}s
+              </div>
+            </article>
+          </Reveal>
         </section>
 
         <DeliverySection />
@@ -141,10 +205,10 @@ export default function HomePage() {
         <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
           <div className="mb-8 flex items-end justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-fuchsia-500">Top ventes</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">Top ventes</p>
               <h2 className="mt-2 text-3xl font-bold text-primary">Best sellers</h2>
             </div>
-            <Link to="/shop" className="text-sm font-semibold text-fuchsia-500 hover:text-fuchsia-400">
+            <Link to="/shop" className="text-sm font-semibold text-cyan-400 hover:text-cyan-300">
               Voir tout
             </Link>
           </div>
@@ -155,6 +219,38 @@ export default function HomePage() {
               : bestSellers.map((product) => <ProductCard key={product.id} product={product} />)}
           </div>
         </section>
+
+        <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-fuchsia-500">Tendance</p>
+              <h2 className="mt-2 text-3xl font-bold text-primary">Produits trending</h2>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-soft bg-surface-strong px-3 py-1 text-xs font-semibold text-secondary">
+              <TrendingUp size={14} className="text-cyan-400" /> Mise a jour live
+            </span>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {loading
+              ? Array.from({ length: 4 }).map((_, index) => <ProductCardSkeleton key={index} />)
+              : trendingProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+          </div>
+        </section>
+
+        {recentlyViewedProducts.length > 0 ? (
+          <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">Historique</p>
+              <h2 className="mt-2 text-2xl font-bold text-primary">Produits consultes recemment</h2>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {recentlyViewedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
           <div className="grid gap-6 lg:grid-cols-2">
@@ -173,7 +269,7 @@ export default function HomePage() {
               <h3 className="mt-2 text-2xl font-bold text-primary">Avis recents</h3>
               <div className="mt-5 grid gap-3">
                 {testimonials.map((testimonial) => (
-                  <div key={testimonial.id} className="card-strong rounded-2xl p-4">
+                  <div key={testimonial.id} className="card-strong premium-hover-depth rounded-2xl p-4">
                     <div className="mb-2 flex items-center gap-1 text-amber-400">
                       {Array.from({ length: testimonial.rating }).map((_, index) => (
                         <Star key={`${testimonial.id}-${index}`} size={14} className="fill-current" />
@@ -210,15 +306,15 @@ export default function HomePage() {
               <h3 className="mt-2 text-2xl font-bold text-primary">Pourquoi Fifty Store ?</h3>
               <ul className="mt-4 space-y-3 text-sm text-secondary">
                 <li className="inline-flex items-start gap-2">
-                  <ShieldCheck size={16} className="mt-0.5 text-fuchsia-500" />
+                  <ShieldCheck size={16} className="mt-0.5 text-cyan-400" />
                   Produits testes et selectionnes pour une qualite stable.
                 </li>
                 <li className="inline-flex items-start gap-2">
-                  <ShieldCheck size={16} className="mt-0.5 text-fuchsia-500" />
+                  <ShieldCheck size={16} className="mt-0.5 text-cyan-400" />
                   Confirmation rapide et suivi de commande via WhatsApp.
                 </li>
                 <li className="inline-flex items-start gap-2">
-                  <ShieldCheck size={16} className="mt-0.5 text-fuchsia-500" />
+                  <ShieldCheck size={16} className="mt-0.5 text-cyan-400" />
                   Livraison nationale avec paiement a la reception.
                 </li>
               </ul>
@@ -242,4 +338,3 @@ export default function HomePage() {
     </>
   );
 }
-

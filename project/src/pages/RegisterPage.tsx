@@ -38,7 +38,7 @@ export default function RegisterPage() {
   };
 
   const handleGoogleRegister = async () => {
-    await signInWithGoogle();
+    return signInWithGoogle();
   };
 
   return (

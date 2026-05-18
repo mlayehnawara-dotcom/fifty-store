@@ -2,11 +2,12 @@
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import Seo from '../components/Seo';
+import { useCatalog } from '../context/CatalogContext';
 import { useWishlist } from '../context/WishlistContext';
-import { products } from '../data/products';
 
 export default function WishlistPage() {
   const { wishlistIds, clearWishlist } = useWishlist();
+  const { products } = useCatalog();
 
   const favoriteProducts = products.filter((product) => wishlistIds.includes(product.id));
 

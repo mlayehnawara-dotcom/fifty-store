@@ -45,7 +45,7 @@ export default function LoginPage() {
     if (expectedRole === 'admin') {
       toast.error('Utilisez le compte Google admin uniquement.');
     }
-    await signInWithGoogle();
+    return signInWithGoogle();
   };
 
   return (

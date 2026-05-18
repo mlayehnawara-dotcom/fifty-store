@@ -12,9 +12,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCatalog } from '../context/CatalogContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { products } from '../data/products';
 import { STORE_INFO } from '../data/store';
 import ThemeToggle from './ThemeToggle';
 
@@ -24,6 +24,7 @@ export default function Navbar() {
   const { totalItems, setIsCartOpen } = useCart();
   const { wishlistCount } = useWishlist();
   const { user, isAuthenticated, isAdmin, signOut } = useAuth();
+  const { products } = useCatalog();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
