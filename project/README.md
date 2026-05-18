@@ -1,110 +1,41 @@
-# Fifty Store - React + Tailwind E-commerce
+﻿# Fifty Store - Futuristic Ecommerce Platform
 
-Modern e-commerce frontend for **Fifty Store** (Tunisia), built with React, TypeScript, Tailwind CSS, and Vite.
+Next-generation Tunisian tech ecommerce built with React + TypeScript + Tailwind.
 
-## Store Info
+## Core Identity
 
 - Store: **Fifty Store**
 - Founder: **Wissem Loueti**
-- Phone / WhatsApp: **+216 99 400 090**
-- Currency: **TND**
-- Delivery: **Livraison sur toute la Tunisie**
+- WhatsApp: **+216 99 400 090**
+- Delivery: **Livraison rapide sur toute la Tunisie**
 - Payment: **Paiement a la livraison**
+- Location: **Jemmel, Monastir, Tunisia**
 
-## Features
+## Major Upgrades Included
 
-- Light / Dark theme with localStorage persistence
-- Vibrant premium theme (orange/fuchsia) + attention animations
-- Premium responsive UI (desktop + mobile)
-- Real routing with `react-router-dom`
-- Auth system with roles (`admin` / `client`)
-- Login/Register with email/password
-- Google login/signup via Supabase OAuth
-- Protected routes (admin and client separated)
-- Product listing + details
-- Cart with quantity updates and localStorage
-- Checkout with WhatsApp order generation
-- Wishlist/favorites with localStorage
-- Advanced filters (search, category, brand, price, sort)
-- Store location section with Google Maps iframe
-- Contact, About, and Admin demo pages
-- Toast notifications via `react-hot-toast`
-- SEO basics with `react-helmet-async`
-- Loading states + product skeletons + empty states
+- Futuristic premium UI (glassmorphism, neon gradients, particles, glow effects)
+- Smooth route transitions + advanced animations (Framer Motion, GSAP, Lenis)
+- Enhanced hero with cinematic effects and animated counters
+- AI-like product recommender (budget + usage preferences)
+- Floating AI/live support widget with quick prompts + typing effect
+- Advanced product cards (3D tilt, quick view, compare, live viewers, stock bar)
+- Flash sale timer + trending sections + recently viewed products
+- Mobile app-like UX (bottom navigation + floating cart)
+- PWA support (manifest, service worker, install prompt, offline page)
+- Supabase-ready catalog + orders + customers + wishlist sync
+- Advanced admin dashboard with charts and CRUD-ready actions
+- SEO improvements + sitemap + robots.txt
+- Vercel + Netlify deployment config
 
-## Routes
+## Installed Packages
 
-- `/` Home
-- `/shop` Shop
-- `/product/:id` Product details
-- `/cart` Cart
-- `/checkout` Checkout
-- `/wishlist` Wishlist
-- `/contact` Contact
-- `/about` About
-- `/login` Login
-- `/register` Register
-- `/account` Client account (protected)
-- `/admin` Admin dashboard (protected)
+- `framer-motion`
+- `gsap`
+- `lenis`
+- `recharts`
+- `@supabase/supabase-js` (already present)
 
-## Tech Stack
-
-- React 18 + TypeScript
-- Vite
-- Tailwind CSS
-- `react-router-dom`
-- `react-hot-toast`
-- `react-helmet-async`
-- `lucide-react`
-
-## Getting Started
-
-```bash
-npm install
-npm run dev
-```
-
-Open: `http://localhost:5173`
-
-## Access Frontend / Backend
-
-### Frontend (local)
-
-```bash
-cd "C:\Users\LENOVO\Downloads\fifty store\project"
-npm install
-npm run dev
-```
-
-Then open:
-
-- `http://localhost:5173`
-
-### Backend
-
-This project does **not** include a separate Node/Express backend folder.
-Current backend is handled by **Supabase** (Auth + DB/API).
-
-To access backend:
-
-1. Create/connect your Supabase project
-2. Add env vars in project root `.env`:
-
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_ADMIN_EMAIL=admin@email.com
-VITE_ADMIN_LOCAL_PASSWORD=Admin@12345
-```
-
-3. Open Supabase dashboard:
-
-- `https://supabase.com/dashboard`
-- Project panel: Auth, Database, Tables, API
-
-If Supabase env vars are missing, app still works in local auth fallback mode (no external backend).
-
-## Scripts
+## Project Scripts
 
 ```bash
 npm run dev
@@ -114,68 +45,219 @@ npm run lint
 npm run typecheck
 ```
 
-## Important Config To Update
+## Run Locally
 
-Edit: `src/data/store.ts`
-
-```ts
-export const STORE_LOCATION = {
-  name: "Fifty Store",
-  address: "Tunisia",
-  city: "Tunisia",
-  phone: "+216 99 400 090",
-  googleMapsUrl: "https://maps.app.goo.gl/KX1CNrLEs2SmmFqVA?g_st=ic",
-  embedMapUrl: "https://maps.google.com/maps?q=36.8065,10.1815&z=15&output=embed"
-};
+```bash
+cd "C:\Users\LENOVO\Downloads\fifty store\project"
+npm install
+npm run dev
 ```
 
-You can change:
+Open `http://localhost:5173`.
 
-- `address` to your exact boutique address
-- `googleMapsUrl` to your preferred public maps link
-- `embedMapUrl` if you want a different map center/zoom
+## Acces Frontend / Backend / Admin
 
-## Auth Config (Google + Admin)
+### Frontend
+
+- URL locale: `http://localhost:5173`
+- Commandes:
+
+```bash
+cd "C:\Users\LENOVO\Downloads\fifty store\project"
+npm run dev
+```
+
+### Backend (Supabase)
+
+- Backend utilise Supabase (pas de backend Node local dans ce projet).
+- Dashboard: `https://supabase.com/dashboard`
+- Variables obligatoires dans `.env`:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_ADMIN_EMAIL=admin@fiftystore.tn
+VITE_ADMIN_LOCAL_PASSWORD=Admin@12345
+```
+
+### Admin (acces local/demo)
+
+- Page login: `http://localhost:5173/login`
+- Email admin: `admin@fiftystore.tn`
+- Mot de passe admin: `Admin@12345`
+
+Si tu modifies `VITE_ADMIN_EMAIL` ou `VITE_ADMIN_LOCAL_PASSWORD`, utilise les nouvelles valeurs.
+
+## Environment Variables
 
 Create `.env` in project root:
 
 ```env
-VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_ADMIN_EMAIL=admin@email.com
+VITE_ADMIN_EMAIL=admin@fiftystore.tn
 VITE_ADMIN_LOCAL_PASSWORD=Admin@12345
+VITE_SITE_URL=https://fifty-store.tn
 ```
 
-Notes:
+If Supabase is missing/unavailable, the app automatically falls back to local mock/localStorage mode.
 
-- If Supabase env is set: email auth + Google OAuth are active.
-- If Supabase env is missing: app uses local auth fallback.
-- Local fallback auto-creates admin account:
-  - email = `VITE_ADMIN_EMAIL` (or default `admin@fiftystore.tn`)
-  - password = `VITE_ADMIN_LOCAL_PASSWORD` (or default `Admin@12345`)
+## Supabase Files
 
-For Google OAuth in Supabase:
+- `src/lib/supabase.ts` (TypeScript app integration)
+- `src/lib/supabase.js` (JS variant requested)
 
-1. Enable **Google** provider in Supabase Auth settings.
-2. Add your app URL in redirect URLs (example: `http://localhost:5173`).
-3. Configure Google client ID/secret in Supabase.
+## Required Supabase Tables
 
-## WhatsApp Checkout
+Create these tables in `public` schema:
 
-Checkout opens:
+1. `products`
+- `id` (bigint, primary key)
+- `name` (text)
+- `brand` (text)
+- `category` (text)
+- `price` (numeric)
+- `old_price` (numeric, nullable)
+- `description` (text)
+- `image_url` (text, nullable)
+- `image` (text, nullable)
+- `images` (jsonb, nullable)
+- `video_url` (text, nullable)
+- `stock` (int)
+- `rating` (numeric)
+- `reviews` (int)
+- `is_best_seller` (boolean)
+- `is_new` (boolean)
+- `created_at` (timestamp, default now())
 
-`https://wa.me/21699400090?text=...`
+2. `categories`
+- `id` (text primary key)
+- `slug` (text, nullable)
+- `name` (text)
 
-Message includes:
+3. `customers`
+- `id` (bigint, primary key)
+- `full_name` (text)
+- `phone` (text, unique recommended)
+- `city` (text)
+- `address` (text)
+- `created_at` (timestamp, default now())
 
-- customer name, phone, city, address, notes
-- product names, quantities, unit prices
-- total price
-- payment method
-- delivery info
+4. `orders`
+- `id` (bigint, primary key)
+- `customer_id` (bigint, nullable)
+- `customer_name` (text)
+- `phone` (text)
+- `city` (text)
+- `address` (text)
+- `notes` (text, nullable)
+- `total` (numeric)
+- `status` (text) default `En cours`
+- `payment_method` (text, nullable)
+- `delivery_method` (text, nullable)
+- `created_at` (timestamp, default now())
+
+5. `order_items`
+- `id` (bigint, primary key)
+- `order_id` (bigint)
+- `product_id` (bigint)
+- `product_name` (text)
+- `quantity` (int)
+- `unit_price` (numeric)
+- `total_price` (numeric)
+
+6. `wishlist`
+- `id` (bigint, primary key)
+- `user_id` (uuid)
+- `product_id` (bigint)
+- `created_at` (timestamp, default now())
+- Unique index on `(user_id, product_id)`
+
+## Current Supabase Integrations
+
+### Products
+- Catalog fetches products from Supabase
+- Realtime subscription on products table
+- Local mock fallback if Supabase fails or returns empty
+
+### Orders
+- Checkout stores customer/order data in Supabase
+- Cart items are inserted into `order_items`
+- WhatsApp checkout remains always active (never blocked)
+
+### Customers
+- Customer is created if not existing (based on phone)
+- Existing customer info is updated when ordering
+
+### Wishlist
+- LocalStorage wishlist always works
+- If Supabase auth session exists, wishlist syncs to `wishlist` table
+
+### Admin Dashboard
+- Add product (local + Supabase sync when available)
+- Edit product price (local + Supabase sync)
+- Delete product (local + Supabase sync)
+- Orders can be loaded from Supabase
+- Order status updates are synced to Supabase
+
+## PWA Support
+
+Added:
+
+- `public/manifest.webmanifest`
+- `public/sw.js`
+- `public/offline.html`
+- install prompt button in UI
+- service worker registration in `src/main.tsx`
+
+## SEO & Marketing
+
+Added/updated:
+
+- page-level SEO via `react-helmet-async`
+- Open Graph + Twitter card tags
+- `public/sitemap.xml`
+- `public/robots.txt`
+- canonical URLs and robots metadata
+
+## Deployment
+
+### Vercel
+
+- Config file: `vercel.json`
+- Build command: `npm run build`
+- Output: `dist`
+
+### Netlify
+
+- Config file: `netlify.toml`
+- Build command: `npm run build`
+- Publish directory: `dist`
+- SPA redirect configured
+
+## Managing Content
+
+### Update products quickly
+
+- Preferred: Supabase `products` table
+- Fallback/mock source: `src/data/products.ts`
+
+### Update store location/contact
+
+Edit `src/data/store.ts`:
+- `STORE_INFO`
+- `STORE_LOCATION`
+
+### Update AI recommender logic
+
+Edit `src/components/AIProductRecommender.tsx` scoring rules.
+
+### Update AI/live support responses
+
+Edit `src/components/chat/AIAssistantWidget.tsx` in `buildAssistantReply()`.
 
 ## Build Status
 
-- Lint: passing
-- Typecheck: passing
-- Production build: passing
+- `npm run typecheck`: ✅
+- `npm run build`: ✅
+
