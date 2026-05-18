@@ -15,6 +15,9 @@ interface SupabaseProductRow {
   reviews?: number | null;
   stock?: number | null;
   image?: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
+  video?: string | null;
   images?: unknown;
   description?: string | null;
   specs?: unknown;
@@ -65,6 +68,7 @@ function asStringArray(value: unknown): string[] {
 function mapProductRow(row: SupabaseProductRow): Product {
   const imageFallback =
     row.image ||
+    row.image_url ||
     'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1000';
 
   const images = asStringArray(row.images);
@@ -83,6 +87,7 @@ function mapProductRow(row: SupabaseProductRow): Product {
     stock: Number(row.stock ?? 0),
     image: imageFallback,
     images: images.length > 0 ? images : [imageFallback],
+    videoUrl: row.video_url || row.video || undefined,
     description: row.description || 'Produit premium Fifty Store.',
     specs: specs.length > 0 ? specs : ['Details a completer'],
     isNew: Boolean(row.is_new),
@@ -152,16 +157,18 @@ export async function fetchCatalogCategories(): Promise<Category[]> {
 }
 
 export function subscribeToCatalogChanges(onChange: () => void): () => void {
-  if (!isSupabaseConfigured || !supabase) {
+  const client = supabase;
+
+  if (!isSupabaseConfigured || !client) {
     return () => undefined;
   }
 
-  const channel = supabase
+  const channel = client
     .channel('catalog-products-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => onChange())
     .subscribe();
 
   return () => {
-    void supabase.removeChannel(channel);
+    void client.removeChannel(channel);
   };
 }

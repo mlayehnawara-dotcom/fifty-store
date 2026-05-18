@@ -5,6 +5,7 @@ import DeliverySection from '../components/DeliverySection';
 import ProductCard from '../components/ProductCard';
 import Seo from '../components/Seo';
 import StoreLocation from '../components/StoreLocation';
+import AIProductRecommender from '../components/AIProductRecommender';
 import AnimatedCounter from '../components/animations/AnimatedCounter';
 import FloatingParticles from '../components/animations/FloatingParticles';
 import MagneticButton from '../components/animations/MagneticButton';
@@ -199,6 +200,8 @@ export default function HomePage() {
             </article>
           </Reveal>
         </section>
+
+        <AIProductRecommender />
 
         <DeliverySection />
 

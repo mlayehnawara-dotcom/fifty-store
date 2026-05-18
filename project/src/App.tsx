@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import CartSidebar from './components/CartSidebar';
 import FloatingCartButton from './components/FloatingCartButton';
+import InstallAppPrompt from './components/InstallAppPrompt';
 import MobileBottomNav from './components/MobileBottomNav';
 import RequireAuth from './components/auth/RequireAuth';
 import AIAssistantWidget from './components/chat/AIAssistantWidget';
@@ -117,6 +118,7 @@ function AppLayout() {
       <Footer />
       <MobileBottomNav />
       <FloatingCartButton />
+      <InstallAppPrompt />
       <AIAssistantWidget />
 
       <Toaster

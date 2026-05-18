@@ -127,6 +127,19 @@ export default function ProductDetailPage() {
                   ))}
                 </div>
               ) : null}
+
+              {product.videoUrl ? (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-soft bg-black">
+                  <iframe
+                    src={product.videoUrl}
+                    title={`${product.name} video`}
+                    className="aspect-video w-full"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : null}
             </article>
 
             <article className="glass-card rounded-3xl p-6">

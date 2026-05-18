@@ -16,46 +16,79 @@ interface CreateOrderPayload extends CustomerPayload {
   deliveryMethod: string;
 }
 
+async function resolveCustomerId(payload: CustomerPayload): Promise<number | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+
+  const existing = await supabase.from('customers').select('id').eq('phone', payload.phone).maybeSingle();
+  if (existing.data?.id) {
+    await supabase
+      .from('customers')
+      .update({
+        full_name: payload.fullName,
+        city: payload.city,
+        address: payload.address,
+      })
+      .eq('id', existing.data.id);
+    return Number(existing.data.id);
+  }
+
+  const created = await supabase
+    .from('customers')
+    .insert({
+      full_name: payload.fullName,
+      phone: payload.phone,
+      city: payload.city,
+      address: payload.address,
+    })
+    .select('id')
+    .single();
+
+  return Number(created.data?.id ?? 0) || null;
+}
+
 export async function createSupabaseOrder(payload: CreateOrderPayload): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) {
     return false;
   }
 
   try {
-    const customerRecord = {
-      full_name: payload.fullName,
-      phone: payload.phone,
-      city: payload.city,
-      address: payload.address,
-    };
+    const customerId = await resolveCustomerId(payload);
 
-    const customerInsert = await supabase.from('customers').insert(customerRecord).select('id').single();
+    const orderInsert = await supabase
+      .from('orders')
+      .insert({
+        customer_id: customerId,
+        customer_name: payload.fullName,
+        phone: payload.phone,
+        city: payload.city,
+        address: payload.address,
+        notes: payload.notes || null,
+        total: payload.total,
+        payment_method: payload.paymentMethod,
+        delivery_method: payload.deliveryMethod,
+        status: 'En cours',
+      })
+      .select('id')
+      .single();
 
-    const customerId = customerInsert.data?.id ?? null;
+    if (orderInsert.error || !orderInsert.data?.id) {
+      throw orderInsert.error || new Error('Unable to create order');
+    }
 
-    const orderRecord = {
-      customer_id: customerId,
-      customer_name: payload.fullName,
-      customer_phone: payload.phone,
-      city: payload.city,
-      address: payload.address,
-      notes: payload.notes || null,
-      total_amount: payload.total,
-      payment_method: payload.paymentMethod,
-      delivery_method: payload.deliveryMethod,
-      status: 'En cours',
-      items: payload.items.map((item) => ({
-        id: item.product.id,
-        name: item.product.name,
-        brand: item.product.brand,
-        quantity: item.quantity,
-        unitPrice: item.product.price,
-      })),
-    };
+    const orderId = Number(orderInsert.data.id);
 
-    const orderInsert = await supabase.from('orders').insert(orderRecord);
-    if (orderInsert.error) {
-      throw orderInsert.error;
+    const orderItems = payload.items.map((item) => ({
+      order_id: orderId,
+      product_id: item.product.id,
+      product_name: item.product.name,
+      quantity: item.quantity,
+      unit_price: item.product.price,
+      total_price: item.quantity * item.product.price,
+    }));
+
+    const itemsInsert = await supabase.from('order_items').insert(orderItems);
+    if (itemsInsert.error) {
+      throw itemsInsert.error;
     }
 
     return true;
@@ -63,10 +96,11 @@ export async function createSupabaseOrder(payload: CreateOrderPayload): Promise<
     try {
       const fallbackInsert = await supabase.from('orders').insert({
         customer_name: payload.fullName,
-        customer_phone: payload.phone,
+        phone: payload.phone,
         city: payload.city,
         address: payload.address,
-        total_amount: payload.total,
+        notes: payload.notes || null,
+        total: payload.total,
         status: 'En cours',
       });
 

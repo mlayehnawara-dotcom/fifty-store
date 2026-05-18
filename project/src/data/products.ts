@@ -20,6 +20,7 @@ export interface Product {
   stock: number;
   image: string;
   images: string[];
+  videoUrl?: string;
   description: string;
   specs: string[];
   isNew: boolean;
@@ -60,6 +61,7 @@ export const products: Product[] = [
       'https://images.pexels.com/photos/5081386/pexels-photo-5081386.jpeg?auto=compress&cs=tinysrgb&w=1000',
       'https://images.pexels.com/photos/47261/pexels-photo-47261.jpeg?auto=compress&cs=tinysrgb&w=1000',
     ],
+    videoUrl: 'https://www.youtube.com/embed/5VgJ8A5B8R8',
     description: 'iPhone 15 avec puce A16 Bionic, Dynamic Island et capteur photo 48 MP.',
     specs: ['128GB', 'Ecran Super Retina XDR 6.1"', 'USB-C', 'Camera principale 48 MP', 'Face ID'],
     isNew: true,
@@ -82,6 +84,7 @@ export const products: Product[] = [
       'https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1000',
       'https://images.pexels.com/photos/1275929/pexels-photo-1275929.jpeg?auto=compress&cs=tinysrgb&w=1000',
     ],
+    videoUrl: 'https://www.youtube.com/embed/7E4mV0fM5Y8',
     description: 'Galaxy S24 avec IA Galaxy, ecran AMOLED 120Hz et performances flagship.',
     specs: ['256GB', 'Ecran AMOLED 6.2"', 'Camera 50 MP', 'Charge rapide 25W', '5G'],
     isNew: true,
@@ -104,6 +107,7 @@ export const products: Product[] = [
       'https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=1000',
       'https://images.pexels.com/photos/1616403/pexels-photo-1616403.jpeg?auto=compress&cs=tinysrgb&w=1000',
     ],
+    videoUrl: 'https://www.youtube.com/embed/2v2nKqKctmE',
     description: 'Xiaomi 14 avec optique Leica, Snapdragon serie 8 et finition premium.',
     specs: ['RAM 12GB', 'Stockage 256GB', 'HyperCharge 90W', 'Camera Leica', 'IP68'],
     isNew: true,

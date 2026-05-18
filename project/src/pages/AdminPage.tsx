@@ -28,6 +28,15 @@ import {
 } from 'recharts';
 import Seo from '../components/Seo';
 import { useCatalog } from '../context/CatalogContext';
+import { isSupabaseConfigured } from '../lib/supabase';
+import {
+  createProductInSupabase,
+  deleteProductInSupabase,
+  fetchCustomersFromSupabase,
+  fetchOrdersFromSupabase,
+  updateOrderStatusInSupabase,
+  updateProductInSupabase,
+} from '../services/adminService';
 import { formatPrice } from '../utils/format';
 
 interface DemoOrder {
@@ -125,6 +134,9 @@ export default function AdminPage() {
   const [section, setSection] = useState<AdminSection>('overview');
   const [productRows, setProductRows] = useState(products.slice(0, 14));
   const [orderRows, setOrderRows] = useState<DemoOrder[]>(initialOrders);
+  const [remoteCustomers, setRemoteCustomers] = useState<
+    { id: string; name: string; phone: string; city: string; orders: number; spend: number }[]
+  >([]);
   const [form, setForm] = useState<ProductFormState>(initialForm);
   const [customCategory, setCustomCategory] = useState('');
   const [extraCategories, setExtraCategories] = useState<string[]>([]);
@@ -135,6 +147,22 @@ export default function AdminPage() {
       return products.slice(0, 14);
     });
   }, [products]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    const loadRemoteData = async () => {
+      const [remoteOrders, customers] = await Promise.all([fetchOrdersFromSupabase(), fetchCustomersFromSupabase()]);
+      if (remoteOrders.length > 0) {
+        setOrderRows(remoteOrders);
+      }
+      if (customers.length > 0) {
+        setRemoteCustomers(customers);
+      }
+    };
+
+    void loadRemoteData();
+  }, []);
 
   const totalRevenue = useMemo(() => orderRows.reduce((sum, order) => sum + order.amount, 0), [orderRows]);
   const deliveryPending = useMemo(
@@ -174,18 +202,47 @@ export default function AdminPage() {
     ];
   }, [orderRows]);
 
-  const customerRows = useMemo(
-    () =>
-      orderRows.map((order) => ({
-        id: order.id,
-        name: order.customer,
-        phone: order.phone,
-        city: order.city,
-        orders: order.items,
-        spend: order.amount,
-      })),
-    [orderRows],
-  );
+  const customerRows = useMemo(() => {
+    const statsByPhone = orderRows.reduce<Record<string, { orders: number; spend: number }>>((accumulator, order) => {
+      const key = order.phone || order.id;
+      const current = accumulator[key] || { orders: 0, spend: 0 };
+      accumulator[key] = {
+        orders: current.orders + 1,
+        spend: current.spend + order.amount,
+      };
+      return accumulator;
+    }, {});
+
+    if (remoteCustomers.length > 0) {
+      const merged = remoteCustomers.map((customer) => ({
+        ...customer,
+        orders: statsByPhone[customer.phone]?.orders ?? customer.orders,
+        spend: statsByPhone[customer.phone]?.spend ?? customer.spend,
+      }));
+
+      const missing = orderRows
+        .filter((order) => !merged.some((customer) => customer.phone === order.phone))
+        .map((order) => ({
+          id: order.id,
+          name: order.customer,
+          phone: order.phone,
+          city: order.city,
+          orders: statsByPhone[order.phone]?.orders ?? order.items,
+          spend: statsByPhone[order.phone]?.spend ?? order.amount,
+        }));
+
+      return [...merged, ...missing];
+    }
+
+    return orderRows.map((order) => ({
+      id: order.id,
+      name: order.customer,
+      phone: order.phone,
+      city: order.city,
+      orders: order.items,
+      spend: order.amount,
+    }));
+  }, [orderRows, remoteCustomers]);
 
   const categoryOptions = useMemo(() => {
     const fromCatalog = categories.map((category) => category.id).filter((category) => category !== 'all');
@@ -193,7 +250,7 @@ export default function AdminPage() {
     return merged.length > 0 ? merged : ['phones', 'cases', 'chargers', 'headphones', 'smartwatches', 'gaming', 'accessories'];
   }, [categories, extraCategories]);
 
-  const handleAddProduct = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddProduct = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!form.name.trim() || !form.brand.trim() || !form.price || !form.stock) {
@@ -220,19 +277,64 @@ export default function AdminPage() {
 
     setProductRows((current) => [newProduct, ...current]);
     toast.success('Produit ajoute (demo)');
+
+    const synced = await createProductInSupabase({
+      name: newProduct.name,
+      brand: newProduct.brand,
+      category: newProduct.category,
+      price: newProduct.price,
+      stock: newProduct.stock,
+      image: newProduct.image,
+    });
+    if (synced) {
+      toast.success('Produit synchronise avec Supabase.');
+    }
+
     setForm(initialForm);
   };
 
-  const handleDeleteProduct = (id: number) => {
+  const handleDeleteProduct = async (id: number) => {
     setProductRows((current) => current.filter((product) => product.id !== id));
     toast.success('Produit supprime (demo)');
+    const synced = await deleteProductInSupabase(id);
+    if (synced) {
+      toast.success('Suppression synchronisee avec Supabase.');
+    }
   };
 
-  const handleEditProduct = () => {
-    toast.success('Action edition simulee (demo)');
+  const handleEditProduct = async (productId: number) => {
+    const current = productRows.find((product) => product.id === productId);
+    if (!current) return;
+
+    const nextPriceRaw = window.prompt('Nouveau prix (TND):', String(current.price));
+    if (!nextPriceRaw) return;
+
+    const nextPrice = Number(nextPriceRaw);
+    if (!Number.isFinite(nextPrice) || nextPrice <= 0) {
+      toast.error('Prix invalide.');
+      return;
+    }
+
+    setProductRows((rows) =>
+      rows.map((row) =>
+        row.id === productId
+          ? {
+              ...row,
+              price: nextPrice,
+              oldPrice: Math.max(nextPrice, row.oldPrice ?? nextPrice),
+            }
+          : row,
+      ),
+    );
+
+    toast.success('Produit edite (demo)');
+    const synced = await updateProductInSupabase(productId, { price: nextPrice });
+    if (synced) {
+      toast.success('Edition synchronisee avec Supabase.');
+    }
   };
 
-  const updateOrderStatus = (orderId: string, status: DemoOrder['status']) => {
+  const updateOrderStatus = async (orderId: string, status: DemoOrder['status']) => {
     setOrderRows((current) =>
       current.map((order) =>
         order.id === orderId
@@ -244,6 +346,10 @@ export default function AdminPage() {
       ),
     );
     toast.success('Statut livraison mis a jour');
+    const synced = await updateOrderStatusInSupabase(orderId, status);
+    if (synced) {
+      toast.success('Statut synchronise avec Supabase.');
+    }
   };
 
   const addCategory = () => {
@@ -276,7 +382,10 @@ export default function AdminPage() {
         <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
           <header className="mb-8">
             <h1 className="text-3xl font-bold text-primary sm:text-4xl">Espace Admin Fifty Store</h1>
-            <p className="mt-2 text-sm text-muted">Panel avancé prêt pour intégration backend complète.</p>
+            <p className="mt-2 text-sm text-muted">Panel avance pret pour integration backend complete.</p>
+            <p className="mt-2 inline-flex rounded-full border border-soft bg-surface-strong px-3 py-1 text-xs font-semibold text-secondary">
+              {isSupabaseConfigured ? 'Mode Supabase actif' : 'Mode local (fallback)'}
+            </p>
           </header>
 
           <section className="grid gap-4 lg:grid-cols-[250px_1fr]">
@@ -441,7 +550,7 @@ export default function AdminPage() {
                                 <div className="flex items-center gap-2">
                                   <button
                                     type="button"
-                                    onClick={handleEditProduct}
+                                    onClick={() => handleEditProduct(product.id)}
                                     className="premium-btn-secondary !p-2"
                                     aria-label="Editer"
                                   >
