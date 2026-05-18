@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCatalog } from '../context/CatalogContext';
 import { formatPrice } from '../utils/format';
+import OptimizedImage from './ui/OptimizedImage';
 
 interface Preferences {
   gaming: boolean;
@@ -142,7 +143,12 @@ export default function AIProductRecommender() {
             {recommendations.map((entry, index) => (
               <article key={entry.product.id} className="card-strong premium-hover-depth rounded-2xl border border-soft p-3">
                 <div className="flex items-center gap-3">
-                  <img src={entry.product.image} alt={entry.product.name} className="h-14 w-14 rounded-xl object-cover" />
+                  <OptimizedImage
+                    src={entry.product.image}
+                    alt={entry.product.name}
+                    className="h-14 w-14 rounded-xl object-cover"
+                    sizes="56px"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-cyan-400">
                       {index === 0 ? 'Best match' : `Option ${index + 1}`}

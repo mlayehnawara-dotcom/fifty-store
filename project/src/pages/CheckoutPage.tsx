@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Seo from '../components/Seo';
+import OptimizedImage from '../components/ui/OptimizedImage';
 import { useCart } from '../context/CartContext';
 import { STORE_INFO, tunisianCities } from '../data/store';
 import { createSupabaseOrder } from '../services/orderService';
@@ -258,7 +259,12 @@ export default function CheckoutPage() {
               <div className="mt-4 space-y-3">
                 {items.map((item) => (
                   <div key={item.product.id} className="flex items-center gap-3 rounded-xl border border-soft bg-surface-strong p-2">
-                    <img src={item.product.image} alt={item.product.name} className="h-12 w-12 rounded-lg object-cover" />
+                    <OptimizedImage
+                      src={item.product.image}
+                      alt={item.product.name}
+                      className="h-12 w-12 rounded-lg object-cover"
+                      sizes="48px"
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="line-clamp-1 text-sm font-semibold text-primary">{item.product.name}</p>
                       <p className="text-xs text-muted">

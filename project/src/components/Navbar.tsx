@@ -17,6 +17,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { STORE_INFO } from '../data/store';
 import ThemeToggle from './ThemeToggle';
+import OptimizedImage from './ui/OptimizedImage';
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -115,7 +116,13 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             <Link to="/" className="inline-flex items-center gap-2 rounded-xl px-2 py-1">
               <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-soft shadow-lg shadow-black/15">
-                <img src="/fifty-store-logo.png" alt="Fifty Store logo" className="h-full w-full object-cover" />
+                <OptimizedImage
+                  src="/fifty-store-logo.png"
+                  alt="Fifty Store logo"
+                  className="h-full w-full object-cover"
+                  priority
+                  sizes="40px"
+                />
               </span>
               <div>
                 <p className="font-display text-lg font-bold leading-none text-primary">Fifty Store</p>
@@ -175,7 +182,12 @@ export default function Navbar() {
                       }}
                       className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-fuchsia-500/10"
                     >
-                      <img src={product.image} alt={product.name} className="h-10 w-10 rounded-lg object-cover" />
+                      <OptimizedImage
+                        src={product.image}
+                        alt={product.name}
+                        className="h-10 w-10 rounded-lg object-cover"
+                        sizes="40px"
+                      />
                       <div>
                         <p className="line-clamp-1 text-sm font-semibold text-primary">{product.name}</p>
                         <p className="text-xs text-muted">{product.brand}</p>

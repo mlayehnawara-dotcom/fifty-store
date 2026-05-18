@@ -2,6 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../utils/format';
+import OptimizedImage from './ui/OptimizedImage';
 
 export default function CartSidebar() {
   const navigate = useNavigate();
@@ -66,7 +67,12 @@ export default function CartSidebar() {
                   }}
                   className="h-20 w-20 overflow-hidden rounded-xl"
                 >
-                  <img src={item.product.image} alt={item.product.name} className="h-full w-full object-cover" />
+                  <OptimizedImage
+                    src={item.product.image}
+                    alt={item.product.name}
+                    className="h-full w-full object-cover"
+                    sizes="80px"
+                  />
                 </button>
 
                 <div className="min-w-0 flex-1">

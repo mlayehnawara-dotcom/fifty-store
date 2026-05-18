@@ -8,6 +8,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { formatPrice } from '../utils/format';
 import ProductQuickViewModal from './ProductQuickViewModal';
+import OptimizedImage from './ui/OptimizedImage';
 
 interface ProductCardProps {
   product: Product;
@@ -56,11 +57,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         onClick={() => navigate(`/product/${product.id}`)}
       >
         <div className="relative overflow-hidden rounded-2xl border border-soft bg-slate-100 dark:bg-slate-900">
-          <img
+          <OptimizedImage
             src={product.image}
             alt={`${product.name} - ${product.brand}`}
             className="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-110"
-            loading="lazy"
+            sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
           />
 
           <div className="pointer-events-none absolute left-3 top-3 flex flex-wrap gap-2">

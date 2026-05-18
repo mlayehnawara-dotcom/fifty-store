@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 
 interface FloatingParticlesProps {
   count?: number;
@@ -6,9 +6,24 @@ interface FloatingParticlesProps {
 }
 
 export default function FloatingParticles({ count = 22, className = '' }: FloatingParticlesProps) {
+  const [effectiveCount, setEffectiveCount] = useState(count);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+
+    if (reduceMotion) {
+      setEffectiveCount(0);
+      return;
+    }
+
+    // Mobile gets fewer particles to keep frame pacing stable.
+    setEffectiveCount(coarsePointer ? Math.max(6, Math.round(count / 2)) : count);
+  }, [count]);
+
   const particles = useMemo(
     () =>
-      Array.from({ length: count }).map((_, index) => ({
+      Array.from({ length: effectiveCount }).map((_, index) => ({
         id: `particle-${index}`,
         size: 2 + ((index * 13) % 8),
         left: (index * 17) % 100,
@@ -16,7 +31,7 @@ export default function FloatingParticles({ count = 22, className = '' }: Floati
         duration: 6 + ((index * 11) % 10),
         opacity: 0.18 + ((index * 7) % 22) / 100,
       })),
-    [count],
+    [effectiveCount],
   );
 
   return (

@@ -1,20 +1,27 @@
 ﻿import { ArrowRight, Flame, MessageCircle, ShieldCheck, Star, TrendingUp } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import DeliverySection from '../components/DeliverySection';
 import ProductCard from '../components/ProductCard';
 import Seo from '../components/Seo';
-import StoreLocation from '../components/StoreLocation';
-import AIProductRecommender from '../components/AIProductRecommender';
 import AnimatedCounter from '../components/animations/AnimatedCounter';
 import FloatingParticles from '../components/animations/FloatingParticles';
 import MagneticButton from '../components/animations/MagneticButton';
 import Reveal from '../components/animations/Reveal';
+import OptimizedImage from '../components/ui/OptimizedImage';
 import ProductCardSkeleton from '../components/ui/ProductCardSkeleton';
 import { useCatalog } from '../context/CatalogContext';
 import { faqs, testimonials } from '../data/products';
 import { STORE_INFO } from '../data/store';
 import { readRecentlyViewed } from '../utils/recentlyViewed';
+
+// Deferred below-the-fold sections keep the first render lighter in production.
+const AIProductRecommender = lazy(() => import('../components/AIProductRecommender'));
+const DeliverySection = lazy(() => import('../components/DeliverySection'));
+const StoreLocation = lazy(() => import('../components/StoreLocation'));
+
+function DeferredSectionFallback() {
+  return <div className="mx-auto my-8 h-24 max-w-7xl animate-pulse rounded-3xl border border-soft bg-surface-strong/60" />;
+}
 
 export default function HomePage() {
   const { products, loading } = useCatalog();
@@ -159,10 +166,12 @@ export default function HomePage() {
                   <div className="relative flex min-h-[360px] items-center justify-center bg-gradient-to-br from-slate-100 via-white to-fuchsia-100 dark:from-slate-900 dark:via-slate-800 dark:to-fuchsia-950/40 sm:min-h-[430px]">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(236,72,153,0.14),transparent_56%)]" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(56,189,248,0.15),transparent_40%)]" />
-                    <img
+                    <OptimizedImage
                       src="/fifty-store-logo.png"
                       alt="Logo Fifty Store"
                       className="relative h-44 w-44 rounded-full border-4 border-white/70 object-cover shadow-2xl shadow-black/35 sm:h-56 sm:w-56"
+                      priority
+                      sizes="224px"
                     />
                   </div>
                 </div>
@@ -201,9 +210,13 @@ export default function HomePage() {
           </Reveal>
         </section>
 
-        <AIProductRecommender />
+        <Suspense fallback={<DeferredSectionFallback />}>
+          <AIProductRecommender />
+        </Suspense>
 
-        <DeliverySection />
+        <Suspense fallback={<DeferredSectionFallback />}>
+          <DeliverySection />
+        </Suspense>
 
         <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
           <div className="mb-8 flex items-end justify-between">
@@ -334,9 +347,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
-          <StoreLocation />
-        </section>
+        <Suspense fallback={<DeferredSectionFallback />}>
+          <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
+            <StoreLocation />
+          </section>
+        </Suspense>
       </div>
     </>
   );

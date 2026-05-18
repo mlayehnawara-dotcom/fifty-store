@@ -27,6 +27,7 @@ import {
   YAxis,
 } from 'recharts';
 import Seo from '../components/Seo';
+import OptimizedImage from '../components/ui/OptimizedImage';
 import { useCatalog } from '../context/CatalogContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import {
@@ -536,7 +537,12 @@ export default function AdminPage() {
                             <tr key={product.id} className="border-b border-soft/70">
                               <td className="py-3">
                                 <div className="flex items-center gap-3">
-                                  <img src={product.image} alt={product.name} className="h-10 w-10 rounded-lg object-cover" />
+                                  <OptimizedImage
+                                    src={product.image}
+                                    alt={product.name}
+                                    className="h-10 w-10 rounded-lg object-cover"
+                                    sizes="40px"
+                                  />
                                   <div>
                                     <p className="font-semibold text-primary">{product.name}</p>
                                     <p className="text-xs text-muted">{product.brand}</p>

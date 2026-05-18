@@ -21,6 +21,7 @@ import { STORE_INFO } from '../data/store';
 import { addRecentlyViewed } from '../utils/recentlyViewed';
 import { formatPrice } from '../utils/format';
 import { openWhatsApp } from '../utils/whatsapp';
+import OptimizedImage from '../components/ui/OptimizedImage';
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -104,10 +105,11 @@ export default function ProductDetailPage() {
           <section className="mt-5 grid gap-8 lg:grid-cols-2">
             <article className="glass-card rounded-3xl p-5">
               <div className="overflow-hidden rounded-2xl border border-soft bg-slate-100 dark:bg-slate-900">
-                <img
+                <OptimizedImage
                   src={product.images[activeImage] ?? product.image}
                   alt={`${product.name} photo ${activeImage + 1}`}
                   className="aspect-square w-full object-cover transition-transform duration-500 hover:scale-105"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                 />
               </div>
 
@@ -122,7 +124,12 @@ export default function ProductDetailPage() {
                         activeImage === index ? 'border-cyan-400' : 'border-soft'
                       }`}
                     >
-                      <img src={image} alt={`${product.name} miniature ${index + 1}`} className="h-20 w-full object-cover" />
+                      <OptimizedImage
+                        src={image}
+                        alt={`${product.name} miniature ${index + 1}`}
+                        className="h-20 w-full object-cover"
+                        sizes="120px"
+                      />
                     </button>
                   ))}
                 </div>

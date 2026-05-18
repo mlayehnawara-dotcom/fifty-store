@@ -1,6 +1,7 @@
 ﻿import { ArrowLeft, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Seo from '../components/Seo';
+import OptimizedImage from '../components/ui/OptimizedImage';
 import { useCart } from '../context/CartContext';
 import { formatPrice } from '../utils/format';
 
@@ -44,7 +45,12 @@ export default function CartPage() {
                 {items.map((item) => (
                   <article key={item.product.id} className="glass-card grid gap-4 rounded-3xl p-4 sm:grid-cols-[110px_1fr]">
                     <Link to={`/product/${item.product.id}`} className="overflow-hidden rounded-2xl border border-soft">
-                      <img src={item.product.image} alt={item.product.name} className="h-28 w-full object-cover" />
+                      <OptimizedImage
+                        src={item.product.image}
+                        alt={item.product.name}
+                        className="h-28 w-full object-cover"
+                        sizes="110px"
+                      />
                     </Link>
 
                     <div>

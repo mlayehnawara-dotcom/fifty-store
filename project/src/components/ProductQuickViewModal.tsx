@@ -3,6 +3,7 @@ import { CheckCircle2, MessageCircle, ShoppingCart, Star, X } from 'lucide-react
 import { useCart } from '../context/CartContext';
 import type { Product } from '../data/products';
 import { formatPrice } from '../utils/format';
+import OptimizedImage from './ui/OptimizedImage';
 
 interface ProductQuickViewModalProps {
   product: Product | null;
@@ -33,7 +34,12 @@ export default function ProductQuickViewModal({ product, open, onClose }: Produc
           >
             <div className="grid gap-0 md:grid-cols-[0.9fr_1.1fr]">
               <div className="border-b border-soft md:border-b-0 md:border-r">
-                <img src={product.image} alt={product.name} className="aspect-square w-full object-cover" />
+                <OptimizedImage
+                  src={product.image}
+                  alt={product.name}
+                  className="aspect-square w-full object-cover"
+                  sizes="(max-width: 768px) 100vw, 45vw"
+                />
               </div>
 
               <div className="p-5 sm:p-6">

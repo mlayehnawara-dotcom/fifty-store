@@ -19,6 +19,7 @@ import { CompareProvider } from './context/CompareContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { WishlistProvider } from './context/WishlistContext';
 
+// Route-level code splitting keeps initial payload smaller for first-time visitors.
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
@@ -68,6 +69,7 @@ function AppLayout() {
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
         >
+          {/* Suspense fallback avoids blank frames while lazy chunks stream in. */}
           <Suspense fallback={<RouteFallback />}>
             <Routes location={location}>
               <Route path="/" element={<HomePage />} />

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { STORE_INFO } from '../data/store';
 import StoreLocation from './StoreLocation';
+import OptimizedImage from './ui/OptimizedImage';
 
 export default function Footer() {
   const { isAuthenticated, isAdmin } = useAuth();
@@ -13,7 +14,12 @@ export default function Footer() {
         <div>
           <div className="flex items-center gap-3">
             <span className="inline-flex h-12 w-12 overflow-hidden rounded-full border border-soft shadow-lg shadow-black/10">
-              <img src="/fifty-store-logo.png" alt="Fifty Store logo" className="h-full w-full object-cover" />
+              <OptimizedImage
+                src="/fifty-store-logo.png"
+                alt="Fifty Store logo"
+                className="h-full w-full object-cover"
+                sizes="48px"
+              />
             </span>
             <h3 className="text-2xl font-bold text-primary">Fifty Store</h3>
           </div>
