@@ -1,0 +1,46 @@
+﻿export const STORE_INFO = {
+  name: 'Fifty Store',
+  founder: 'Wissem Loueti',
+  phoneDisplay: '+216 99 400 090',
+  phoneLink: '+21699400090',
+  whatsappNumber: '21699400090',
+  deliveryLabel: 'Livraison sur toute la Tunisie',
+  paymentLabel: 'Paiement a la livraison',
+  currency: 'TND',
+};
+
+export const STORE_LOCATION = {
+  name: 'Fifty Store',
+  address: 'Tunisia',
+  city: 'Tunisia',
+  phone: '+216 99 400 090',
+  googleMapsUrl: 'https://maps.app.goo.gl/KX1CNrLEs2SmmFqVA?g_st=ic',
+  embedMapUrl: 'https://maps.google.com/maps?q=36.8065,10.1815&z=15&output=embed',
+};
+
+export const tunisianCities = [
+  'Tunis',
+  'Ariana',
+  'Ben Arous',
+  'Manouba',
+  'Sfax',
+  'Sousse',
+  'Monastir',
+  'Nabeul',
+  'Bizerte',
+  'Kairouan',
+  'Gabes',
+  'Gafsa',
+  'Medenine',
+  'Mahdia',
+  'Kasserine',
+  'Sidi Bouzid',
+  'Jendouba',
+  'Beja',
+  'Le Kef',
+  'Siliana',
+  'Tataouine',
+  'Tozeur',
+  'Kebili',
+  'Zaghouan',
+];

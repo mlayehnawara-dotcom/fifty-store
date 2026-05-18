@@ -1,0 +1,43 @@
+﻿<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="icon" type="image/png" href="/fifty-store-logo.png" />
+
+    <title>Fifty Store | Smartphones et accessoires en Tunisie</title>
+    <meta
+      name="description"
+      content="Fifty Store: boutique tunisienne de smartphones, accessoires, chargeurs, coques et audio. Livraison sur toute la Tunisie et paiement a la livraison."
+    />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Fifty Store" />
+    <meta property="og:title" content="Fifty Store | Smartphones et accessoires en Tunisie" />
+    <meta
+      property="og:description"
+      content="Boutique tech premium en Tunisie. Telephones, accessoires et commande WhatsApp rapide."
+    />
+    <meta property="og:image" content="https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1200" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Fifty Store" />
+    <meta name="twitter:description" content="Smartphones et accessoires premium en Tunisie." />
+    <meta name="twitter:image" content="https://images.pexels.com/photos/1092644/pexels-photo-1092644.jpeg?auto=compress&cs=tinysrgb&w=1200" />
+
+    <script>
+      (function () {
+        const storedTheme = localStorage.getItem('fifty-store-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (storedTheme === 'dark' || (!storedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
