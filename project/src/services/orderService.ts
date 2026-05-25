@@ -1,5 +1,5 @@
 ﻿import type { CartItem } from '../context/CartContext';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase, verifyFiftyStoreDatabase } from '../lib/supabase';
 
 interface CustomerPayload {
   fullName: string;
@@ -18,6 +18,7 @@ interface CreateOrderPayload extends CustomerPayload {
 
 async function resolveCustomerId(payload: CustomerPayload): Promise<number | null> {
   if (!isSupabaseConfigured || !supabase) return null;
+  if (!(await verifyFiftyStoreDatabase())) return null;
 
   const existing = await supabase.from('customers').select('id').eq('phone', payload.phone).maybeSingle();
   if (existing.data?.id) {
@@ -48,6 +49,10 @@ async function resolveCustomerId(payload: CustomerPayload): Promise<number | nul
 
 export async function createSupabaseOrder(payload: CreateOrderPayload): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) {
+    return false;
+  }
+
+  if (!(await verifyFiftyStoreDatabase())) {
     return false;
   }
 

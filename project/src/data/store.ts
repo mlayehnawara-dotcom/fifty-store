@@ -9,6 +9,7 @@
   currency: 'TND',
   instagramUrl: 'https://www.instagram.com/fifty_store_jemmel?igsh=MXJ1YnV2d2o2enZpaQ==',
   facebookUrl: 'https://www.facebook.com/share/1GEHwP7UHq/?mibextid=wwXIfr',
+  tiktokUrl: 'https://www.tiktok.com/@fifty_store0',
 };
 
 export const STORE_LOCATION = {

@@ -1,12 +1,15 @@
 ﻿import { Heart, Eye, Scale, ShoppingCart, Star, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useMemo, useState } from 'react';
+import { MessageCircle } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCompare } from '../context/CompareContext';
 import type { Product } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { formatPrice } from '../utils/format';
+import { isPhoneProduct } from '../utils/productInsights';
+import { buildDirectProductMessage, openWhatsApp } from '../utils/whatsapp';
 import ProductQuickViewModal from './ProductQuickViewModal';
 import OptimizedImage from './ui/OptimizedImage';
 
@@ -21,39 +24,22 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { isCompared, toggleCompare } = useCompare();
 
   const [quickViewOpen, setQuickViewOpen] = useState(false);
-  const [transform, setTransform] = useState('perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)');
 
   const wished = isWishlisted(product.id);
   const compared = isCompared(product.id);
+  const canCompareProduct = isPhoneProduct(product);
 
   const stockPercent = Math.min(100, Math.max(8, (product.stock / 40) * 100));
   const stockTone = product.stock <= 5 ? 'bg-rose-500' : product.stock <= 12 ? 'bg-amber-500' : 'bg-emerald-500';
-
-  const liveVisitors = useMemo(() => 7 + ((product.id * 11) % 28), [product.id]);
 
   return (
     <>
       <motion.article
         className="group mouse-follow-glow glass-card premium-hover-depth relative overflow-hidden rounded-3xl p-4"
-        style={{ transform, transformStyle: 'preserve-3d' }}
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.15 }}
         transition={{ duration: 0.42, ease: [0.2, 0.72, 0.2, 1] }}
-        onMouseMove={(event) => {
-          const card = event.currentTarget;
-          const rect = card.getBoundingClientRect();
-          const x = event.clientX - rect.left;
-          const y = event.clientY - rect.top;
-
-          const rotateX = ((y - rect.height / 2) / rect.height) * -8;
-          const rotateY = ((x - rect.width / 2) / rect.width) * 9;
-
-          setTransform(`perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`);
-          card.style.setProperty('--mx', `${x}px`);
-          card.style.setProperty('--my', `${y}px`);
-        }}
-        onMouseLeave={() => setTransform('perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)')}
         onClick={() => navigate(`/product/${product.id}`)}
       >
         <div className="relative overflow-hidden rounded-2xl border border-soft bg-slate-100 dark:bg-slate-900">
@@ -95,19 +81,21 @@ export default function ProductCard({ product }: ProductCardProps) {
               <Heart size={15} className={wished ? 'fill-rose-500 text-rose-500' : ''} />
             </button>
 
-            <button
-              type="button"
-              aria-label="Comparer"
-              onClick={(event) => {
-                event.stopPropagation();
-                toggleCompare(product.id);
-              }}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-full backdrop-blur hover:scale-105 ${
-                compared ? 'bg-cyan-500 text-slate-950' : 'bg-slate-950/70 text-white'
-              }`}
-            >
-              <Scale size={15} />
-            </button>
+            {canCompareProduct ? (
+              <button
+                type="button"
+                aria-label="Comparer"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleCompare(product.id);
+                }}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-full backdrop-blur hover:scale-105 ${
+                  compared ? 'bg-cyan-500 text-slate-950' : 'bg-slate-950/70 text-white'
+                }`}
+              >
+                <Scale size={15} />
+              </button>
+            ) : null}
           </div>
 
           <button
@@ -131,9 +119,8 @@ export default function ProductCard({ product }: ProductCardProps) {
               <Star size={13} className="fill-amber-400 text-amber-400" />
               {product.rating.toFixed(1)}
             </span>
-            <span>({product.reviews} avis)</span>
-            <span className="ml-auto inline-flex items-center gap-1">
-              <Users size={12} className="text-cyan-400" /> {liveVisitors} en ligne
+            <span className="inline-flex items-center gap-1">
+              <Users size={12} /> {product.reviews} avis
             </span>
           </div>
 
@@ -152,19 +139,34 @@ export default function ProductCard({ product }: ProductCardProps) {
             {product.oldPrice ? <p className="text-sm text-muted line-through">{formatPrice(product.oldPrice)}</p> : null}
           </div>
 
-          <motion.button
-            type="button"
-            disabled={product.stock <= 0}
-            onClick={(event) => {
-              event.stopPropagation();
-              addToCart(product);
-            }}
-            whileTap={{ scale: 0.98 }}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-cyan-500 px-4 py-3 text-sm font-semibold text-white hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <ShoppingCart size={15} />
-            {product.stock > 0 ? 'Ajouter au panier' : 'Rupture de stock'}
-          </motion.button>
+          <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+            <motion.button
+              type="button"
+              disabled={product.stock <= 0}
+              onClick={(event) => {
+                event.stopPropagation();
+                addToCart(product);
+              }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-cyan-500 px-3 py-3 text-sm font-semibold text-white hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <ShoppingCart size={15} />
+              {product.stock > 0 ? 'Ajouter' : 'Indisponible'}
+            </motion.button>
+            <button
+              type="button"
+              disabled={product.stock <= 0}
+              onClick={(event) => {
+                event.stopPropagation();
+                openWhatsApp(buildDirectProductMessage(product));
+              }}
+              title="Commander sur WhatsApp"
+              aria-label={`Commander ${product.name} sur WhatsApp`}
+              className="inline-flex h-12 w-12 items-center justify-center rounded-xl border border-emerald-500/35 bg-emerald-500/10 text-emerald-500 transition hover:bg-emerald-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <MessageCircle size={18} />
+            </button>
+          </div>
         </div>
       </motion.article>
 

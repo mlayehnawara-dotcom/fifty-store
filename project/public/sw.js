@@ -1,8 +1,17 @@
-const CACHE_NAME = 'fifty-store-cache-v3';
+const CACHE_NAME = 'fifty-store-cache-v5';
 const OFFLINE_URL = '/offline.html';
 const PRE_CACHE = ['/', '/offline.html', '/manifest.webmanifest', '/fifty-store-logo.png'];
+const IS_LOCAL_DEV =
+  self.location.hostname === 'localhost' ||
+  self.location.hostname === '127.0.0.1' ||
+  self.location.hostname === '::1';
 
 self.addEventListener('install', (event) => {
+  if (IS_LOCAL_DEV) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
+
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRE_CACHE)).then(() => self.skipWaiting()),
   );
@@ -19,6 +28,11 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
+  if (IS_LOCAL_DEV) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
 
   const requestUrl = new URL(event.request.url);
   const isSameOrigin = requestUrl.origin === self.location.origin;
@@ -45,6 +59,9 @@ self.addEventListener('fetch', (event) => {
         if (cachedResponse) return cachedResponse;
 
         if (event.request.mode === 'navigate') {
+          const appShell = await caches.match('/');
+          if (appShell) return appShell;
+
           const offline = await caches.match(OFFLINE_URL);
           if (offline) return offline;
         }

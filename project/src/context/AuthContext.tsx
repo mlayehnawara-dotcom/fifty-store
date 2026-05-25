@@ -1,8 +1,9 @@
 ﻿/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import type { User } from '@supabase/supabase-js';
-import { ADMIN_EMAIL, ADMIN_LOCAL_PASSWORD, isSupabaseConfigured, supabase } from '../lib/supabase';
+import { ADMIN_EMAIL, ADMIN_LOCAL_PASSWORD, isSupabaseConfigured, supabase, verifyFiftyStoreDatabase } from '../lib/supabase';
+import { createStableContext } from './stableContext';
 
 export type UserRole = 'admin' | 'client';
 
@@ -40,7 +41,7 @@ interface AuthContextType {
 const LOCAL_USERS_KEY = 'fifty-store-auth-users-v1';
 const LOCAL_SESSION_KEY = 'fifty-store-auth-session-v1';
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createStableContext<AuthContextType>('auth');
 
 function getRoleByEmail(email: string): UserRole {
   return email.trim().toLowerCase() === ADMIN_EMAIL ? 'admin' : 'client';
@@ -124,6 +125,7 @@ function writeLocalSession(user: AuthUser | null): void {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [supabaseReady, setSupabaseReady] = useState(false);
 
   useEffect(() => {
     const supabaseClient = supabase;
@@ -140,8 +142,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let mounted = true;
+    let unsubscribeSupabase: () => void = () => undefined;
 
     const init = async () => {
+      const verified = await verifyFiftyStoreDatabase();
+      if (!mounted) return;
+
+      setSupabaseReady(verified);
+      if (!verified) {
+        const users = ensureLocalAdmin(readLocalUsers());
+        if (users.length > 0) {
+          writeLocalUsers(users);
+        }
+        setUser(readLocalSession());
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabaseClient.auth.getSession();
       if (!mounted) return;
 
@@ -154,30 +171,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(mapSupabaseUser(data.session.user));
       }
 
+      const {
+        data: { subscription },
+      } = supabaseClient.auth.onAuthStateChange((_event, session) => {
+        if (!mounted) return;
+
+        if (session?.user) {
+          setUser(mapSupabaseUser(session.user));
+        } else {
+          setUser(null);
+        }
+      });
+
+      unsubscribeSupabase = () => subscription.unsubscribe();
       setLoading(false);
     };
 
     void init();
 
-    const {
-      data: { subscription },
-    } = supabaseClient.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
-
-      if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
-      } else {
-        setUser(null);
-      }
-    });
-
     return () => {
       mounted = false;
-      subscription.unsubscribe();
+      unsubscribeSupabase();
     };
   }, []);
 
-  const signInWithEmail = async (email: string, password: string): Promise<boolean> => {
+  const signInWithEmail = useCallback(async (email: string, password: string): Promise<boolean> => {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail || !password.trim()) {
@@ -185,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    if (isSupabaseConfigured && supabase) {
+    if (supabaseReady && supabase) {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
@@ -228,9 +246,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     writeLocalSession(localUser);
     toast.success('Connexion reussie (mode local)');
     return true;
-  };
+  }, [supabaseReady]);
 
-  const signUpWithEmail = async (fullName: string, email: string, password: string): Promise<boolean> => {
+  const signUpWithEmail = useCallback(async (fullName: string, email: string, password: string): Promise<boolean> => {
     const normalizedEmail = email.trim().toLowerCase();
     const trimmedFullName = fullName.trim();
 
@@ -244,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    if (isSupabaseConfigured && supabase) {
+    if (supabaseReady && supabase) {
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -300,11 +318,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     writeLocalSession(sessionUser);
     toast.success('Compte cree (mode local).');
     return true;
-  };
+  }, [supabaseReady]);
 
-  const signInWithGoogle = async (): Promise<boolean> => {
-    if (!isSupabaseConfigured || !supabase) {
-      toast.error('Google login nécessite Supabase (VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY).');
+  const signInWithGoogle = useCallback(async (): Promise<boolean> => {
+    if (!supabaseReady || !supabase) {
+      toast.error('Google login necessite une base Fifty Store Supabase verifiee.');
       return false;
     }
 
@@ -322,10 +340,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     toast.success('Redirection Google...');
     return true;
-  };
+  }, [supabaseReady]);
 
-  const signOutUser = async (): Promise<void> => {
-    if (isSupabaseConfigured && supabase) {
+  const signOutUser = useCallback(async (): Promise<void> => {
+    if (supabaseReady && supabase) {
       const { error } = await supabase.auth.signOut();
       if (error) {
         toast.error(error.message);
@@ -336,7 +354,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     writeLocalSession(null);
     setUser(null);
     toast.success('Deconnecte');
-  };
+  }, [supabaseReady]);
 
   const value = useMemo<AuthContextType>(
     () => ({
@@ -345,13 +363,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: Boolean(user),
       isAdmin: user?.role === 'admin',
       isClient: user?.role === 'client',
-      usingSupabase: isSupabaseConfigured,
+      usingSupabase: supabaseReady,
       signInWithEmail,
       signUpWithEmail,
       signInWithGoogle,
       signOut: signOutUser,
     }),
-    [user, loading],
+    [user, loading, supabaseReady, signInWithEmail, signUpWithEmail, signInWithGoogle, signOutUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,7 +1,8 @@
 ﻿/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
 import type { Product } from '../data/products';
+import { createStableContext } from './stableContext';
 
 const CART_STORAGE_KEY = 'fifty-store-cart-v1';
 
@@ -22,7 +23,7 @@ interface CartContextType {
   setIsCartOpen: (open: boolean) => void;
 }
 
-const CartContext = createContext<CartContextType | null>(null);
+const CartContext = createStableContext<CartContextType>('cart');
 
 function readStoredCart(): CartItem[] {
   try {

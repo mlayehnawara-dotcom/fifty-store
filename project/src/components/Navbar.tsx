@@ -64,7 +64,7 @@ export default function Navbar() {
         );
       })
       .slice(0, 6);
-  }, [query]);
+  }, [query, products]);
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
     `rounded-xl px-3 py-2 text-sm font-semibold transition ${

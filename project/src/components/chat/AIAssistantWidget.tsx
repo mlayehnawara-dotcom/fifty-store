@@ -1,8 +1,11 @@
-﻿import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, MessageCircle, Send, Sparkles, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useCatalog } from '../../context/CatalogContext';
 import { STORE_INFO } from '../../data/store';
+import type { Product } from '../../data/products';
+import { formatPrice } from '../../utils/format';
 
 interface ChatMessage {
   id: string;
@@ -10,47 +13,338 @@ interface ChatMessage {
   text: string;
 }
 
-const quickPrompts = ['Smartphones', 'Livraison', 'Paiement', 'Accessoires gaming'];
+interface BudgetParseResult {
+  value: number;
+  raw: number;
+  adjusted: boolean;
+}
 
-function buildAssistantReply(message: string): string {
-  const value = message.toLowerCase();
+interface AssistantReply {
+  text: string;
+  suggestionHref: string;
+}
 
-  if (value.includes('livraison') || value.includes('24') || value.includes('72')) {
-    return 'Livraison rapide sur toute la Tunisie en 24-72h selon la ville. Confirmation immédiate via WhatsApp.';
+interface RankedProduct {
+  product: Product;
+  score: number;
+}
+
+const categoryKeywords: { category: Product['category']; keywords: string[] }[] = [
+  {
+    category: 'iphones',
+    keywords: ['telephone', 'talfoun', 'tlfn', 'tel', 'phone', 'smartphone', 'iphone', 'samsung', 'xiaomi', 'redmi', 'oppo', 'tecno'],
+  },
+  { category: 'cases', keywords: ['coque', 'case', 'anticase', 'cage', 'protection', 'verre', 'vitre', 'magsafe'] },
+  { category: 'chargers', keywords: ['chargeur', 'charger', 'cable', 'type-c', 'type', 'usb', 'tube', 'charge'] },
+  { category: 'headphones', keywords: ['ecouteur', 'buds', 'airpods', 'casque', 'headphone', 'audio', 'filaire', 'sans fil'] },
+  { category: 'smartwatches', keywords: ['watch', 'montre', 'smartwatch'] },
+  { category: 'powerbanks', keywords: ['power bank', 'powerbank', 'batterie externe'] },
+  { category: 'speakers', keywords: ['baffle', 'speaker', 'bluetooth speaker'] },
+  { category: 'accessories', keywords: ['accessoire', 'support', 'nettoyeur', 'kit'] },
+];
+
+const categorySearchTerms: Record<Product['category'], string> = {
+  iphones: 'iphone',
+  cases: 'coque',
+  chargers: 'chargeur',
+  headphones: 'ecouteur',
+  smartwatches: 'watch',
+  powerbanks: 'powerbank',
+  speakers: 'baffle',
+  accessories: 'accessoire',
+};
+
+const stopWords = new Set([
+  'budget',
+  'moins',
+  'under',
+  'max',
+  'maximum',
+  'prix',
+  'price',
+  'souma',
+  'soum',
+  'qadeh',
+  '9adeh',
+  'b9adeh',
+  'bqadeh',
+  'dt',
+  'tnd',
+  'dinar',
+  'dinars',
+  'nheb',
+  'nhb',
+  'chniya',
+  'chnowa',
+  'm3aya',
+  'maaya',
+  '3andi',
+  'andi',
+  'yansahni',
+  'livraison',
+  'delivery',
+  'transport',
+  'paiement',
+  'cash',
+  'cod',
+  'bonjour',
+  'salut',
+  'hello',
+  'salam',
+  'asslema',
+]);
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function parseBudget(message: string, minimumBudget: number): BudgetParseResult | null {
+  const normalized = normalizeText(message).replace(/,/g, '.');
+  const currencyValues = [...normalized.matchAll(/(\d+(?:\.\d+)?)\s*(?:dt|tnd|dinar|dinars)\b/g)]
+    .map((match) => Number(match[1]))
+    .filter((value) => Number.isFinite(value));
+
+  let values = currencyValues;
+  const hasBudgetIntent = /\b(budget|moins|under|max|maximum|jusqua|jusqu|flous|m3aya|maaya|3andi|andi)\b/.test(normalized);
+
+  if (values.length === 0 && hasBudgetIntent) {
+    values = [...normalized.matchAll(/\b\d+(?:\.\d+)?\b/g)]
+      .map((match) => Number(match[0]))
+      .filter((value) => Number.isFinite(value));
   }
 
-  if (value.includes('paiement') || value.includes('cash') || value.includes('cod')) {
-    return 'Le paiement est à la livraison. Vous payez uniquement à la réception, en toute tranquillité.';
+  if (values.length === 0) {
+    const standalone = [...normalized.matchAll(/\b\d+(?:\.\d+)?\b/g)]
+      .map((match) => Number(match[0]))
+      .filter((value) => Number.isFinite(value));
+    const looksLikeModel = /\b(iphone|galaxy|redmi|note|watch|s24|s23|s22)\b/.test(normalized);
+
+    if (standalone.length === 1 && standalone[0] >= minimumBudget && !looksLikeModel) {
+      values = standalone;
+    }
   }
 
-  if (value.includes('iphone') || value.includes('samsung') || value.includes('smartphone')) {
-    return 'Top choix du moment: iPhone 15, Samsung S24 et Xiaomi 14. Je peux vous guider selon votre budget en TND.';
+  if (values.length === 0) return null;
+
+  const raw = Math.max(...values);
+  return {
+    raw,
+    value: Math.max(minimumBudget, raw),
+    adjusted: raw < minimumBudget,
+  };
+}
+
+function detectCategory(message: string): Product['category'] | null {
+  const normalized = normalizeText(message);
+  const match = categoryKeywords.find((entry) => entry.keywords.some((keyword) => normalized.includes(keyword)));
+  return match?.category ?? null;
+}
+
+function extractSearchTokens(message: string): string[] {
+  return normalizeText(message)
+    .split(/[^a-z0-9]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 2 && !stopWords.has(token));
+}
+
+function isDeliveryQuestion(normalized: string): boolean {
+  return normalized.includes('livraison') || normalized.includes('delivery') || normalized.includes('transport');
+}
+
+function isPaymentQuestion(normalized: string): boolean {
+  return normalized.includes('paiement') || normalized.includes('cash') || normalized.includes('cod') || normalized.includes('livraison');
+}
+
+function isGreeting(normalized: string): boolean {
+  return /\b(bonjour|salut|hello|salam|asslema)\b/.test(normalized);
+}
+
+function isPriceQuestion(normalized: string): boolean {
+  return /\b(prix|price|souma|soum|qadeh|9adeh|b9adeh|bqadeh)\b/.test(normalized);
+}
+
+function productSearchText(product: Product): string {
+  return normalizeText(`${product.name} ${product.brand} ${product.category} ${product.description} ${product.specs.join(' ')}`);
+}
+
+function rankProducts(message: string, products: Product[], budget: BudgetParseResult | null): RankedProduct[] {
+  const category = detectCategory(message);
+  const tokens = extractSearchTokens(message);
+
+  return products
+    .map((product) => {
+      const searchable = productSearchText(product);
+      const normalizedName = normalizeText(product.name);
+      const normalizedBrand = normalizeText(product.brand);
+      let score = product.rating * 1.5 + product.reviews * 0.01;
+
+      if (category && product.category === category) score += 18;
+
+      tokens.forEach((token) => {
+        if (normalizedName.includes(token)) score += 9;
+        else if (normalizedBrand.includes(token)) score += 7;
+        else if (searchable.includes(token)) score += 3;
+      });
+
+      if (budget) {
+        if (product.price <= budget.value) {
+          score += 24 - Math.min(8, (budget.value - product.price) / 250);
+        } else {
+          score -= Math.min(22, (product.price - budget.value) / 95);
+        }
+      }
+
+      if (product.stock > 0) score += 2;
+      else score -= 8;
+      if (product.isBestSeller) score += 3;
+      if (product.isNew) score += 1;
+
+      return { product, score };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
+function productSummary(product: Product, budget: BudgetParseResult | null): string {
+  const budgetLine = budget
+    ? product.price <= budget.value
+      ? `Yodkhol fi budget ${formatPrice(budget.value)}.`
+      : `Fouq budget ${formatPrice(budget.value)}, ama akreb choix ken theb upgrade.`
+    : 'Najm nanshek bih ken budgetek ywasel.';
+
+  return `${product.name}: ${formatPrice(product.price)}.\n${product.description}\nSpecs: ${product.specs.slice(0, 3).join(', ')}.\n${budgetLine}`;
+}
+
+function recommendationLine(product: Product, index: number): string {
+  const specHint = product.specs.slice(0, 2).join(', ');
+  return `${index + 1}. ${product.name} - ${formatPrice(product.price)} (${specHint || product.brand})`;
+}
+
+function buildRecommendationReply(
+  message: string,
+  products: Product[],
+  budget: BudgetParseResult | null,
+  minimumBudget: number,
+): AssistantReply {
+  const category = detectCategory(message);
+  const ranked = rankProducts(message, products, budget);
+  const inBudget = budget ? ranked.filter((entry) => entry.product.price <= budget.value) : ranked;
+  const selected = (inBudget.length > 0 ? inBudget : ranked).slice(0, 3);
+  const topProduct = selected[0]?.product;
+  const budgetNote = budget?.adjusted
+    ? `Budget minimum houwa ${formatPrice(minimumBudget)}, donc khdhit ${formatPrice(minimumBudget)} comme base.\n`
+    : budget
+      ? `Hasb budget ${formatPrice(budget.value)}:\n`
+      : 'Hedhi akther choix nanshek bihom:\n';
+
+  if (!topProduct) {
+    return {
+      text: 'Ma l9itech produit ymatchi l demande. Jarreb kteb budget wala categorie kima iPhone, chargeur, smartwatch, powerbank, baffle.',
+      suggestionHref: '/shop',
+    };
   }
 
-  if (value.includes('gaming')) {
-    return 'Côté gaming: manettes Bluetooth, casques RGB et accessoires mobile gamer sont disponibles.';
+  const noExactBudget = budget && inBudget.length === 0;
+  const prefix = noExactBudget
+    ? `${budgetNote}Ma l9itech produit taht el budget hedha. Akreb produits disponibles:\n`
+    : budgetNote;
+
+  return {
+    text: `${prefix}${selected.map((entry, index) => recommendationLine(entry.product, index)).join('\n')}\n\nTop pick: ${
+      topProduct.name
+    } خاطر rapport prix/specs behi.`,
+    suggestionHref: category ? `/shop?q=${encodeURIComponent(categorySearchTerms[category])}` : `/product/${topProduct.id}`,
+  };
+}
+
+function buildAssistantReply(message: string, products: Product[], minimumBudget: number): AssistantReply {
+  const normalized = normalizeText(message);
+  const budget = parseBudget(message, minimumBudget);
+  const category = detectCategory(message);
+  const tokens = extractSearchTokens(message);
+  const hasCatalogIntent = Boolean(budget || category || tokens.length > 0 || isPriceQuestion(normalized));
+
+  if (products.length === 0) {
+    return {
+      text: 'Le catalogue est vide pour le moment. Ajoute des produits dans admin, w baad nanshek hasb budgetek.',
+      suggestionHref: '/shop',
+    };
   }
 
-  if (value.includes('bonjour') || value.includes('salut') || value.includes('hello')) {
-    return 'Bonjour 👋 Je suis l’assistant Fifty Store. Dites-moi votre budget et je vous propose les meilleurs produits.';
+  if (isDeliveryQuestion(normalized) && !hasCatalogIntent) {
+    return {
+      text: 'Livraison rapide sur toute la Tunisie en 24-72h selon la ville. Confirmation via WhatsApp.',
+      suggestionHref: '/contact',
+    };
   }
 
-  return 'Je peux vous aider pour smartphones, accessoires, livraison, paiement et commande WhatsApp. Que cherchez-vous exactement ?';
+  if (isPaymentQuestion(normalized) && !hasCatalogIntent) {
+    return {
+      text: 'Paiement a la livraison. El client ykhaless ki yestlem el commande.',
+      suggestionHref: '/checkout',
+    };
+  }
+
+  const ranked = rankProducts(message, products, budget);
+  const bestMatch = ranked[0];
+
+  if (isPriceQuestion(normalized) && (tokens.length > 0 || category) && bestMatch && bestMatch.score >= 13) {
+    return {
+      text: productSummary(bestMatch.product, budget),
+      suggestionHref: `/product/${bestMatch.product.id}`,
+    };
+  }
+
+  if (budget || category || tokens.length > 0) {
+    return buildRecommendationReply(message, products, budget, minimumBudget);
+  }
+
+  if (isGreeting(normalized)) {
+    return {
+      text: `Ahla. Aatini budgetek mel ${formatPrice(minimumBudget)} w fou9, wala 9olli chnowa t7eb: iPhone, chargeur, ecouteur, smartwatch, powerbank... w nanshek b produit w prix.`,
+      suggestionHref: '/shop',
+    };
+  }
+
+  return {
+    text: `Najm nanshek hasb budgetek w produits Fifty Store. Exemple: "budget 150 DT chargeur" wala "prix iPhone 15". Budget minimum: ${formatPrice(
+      minimumBudget,
+    )}.`,
+    suggestionHref: '/shop',
+  };
 }
 
 export default function AIAssistantWidget() {
+  const { products, aiMinBudget } = useCatalog();
+  const quickPrompts = [`Budget ${aiMinBudget} DT`, 'iPhone 1500 DT', 'Chargeur moins 150 DT', 'Powerbank'];
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState('');
+  const [suggestionHref, setSuggestionHref] = useState('/shop');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'Bonjour 👋 Besoin d’aide pour choisir un smartphone ?',
+      text: `Ahla. Aatini budgetek mel ${formatPrice(aiMinBudget)} w nanshek b produit w prix.`,
     },
   ]);
 
   const canSend = input.trim().length > 0 && !typing;
+
+  useEffect(() => {
+    setMessages((current) => {
+      if (current.length !== 1 || current[0].id !== 'welcome') return current;
+
+      return [
+        {
+          ...current[0],
+          text: `Ahla. Aatini budgetek mel ${formatPrice(aiMinBudget)} w nanshek b produit w prix.`,
+        },
+      ];
+    });
+  }, [aiMinBudget]);
 
   const handleSend = (text?: string) => {
     const content = (text || input).trim();
@@ -67,27 +361,17 @@ export default function AIAssistantWidget() {
     setTyping(true);
 
     window.setTimeout(() => {
+      const assistantReply = buildAssistantReply(content, products, aiMinBudget);
       const reply: ChatMessage = {
         id: `a-${Date.now()}`,
         role: 'assistant',
-        text: buildAssistantReply(content),
+        text: assistantReply.text,
       };
+      setSuggestionHref(assistantReply.suggestionHref);
       setMessages((current) => [...current, reply]);
       setTyping(false);
     }, 640);
   };
-
-  const latestSuggestion = useMemo(() => {
-    const lastUserMessage = [...messages].reverse().find((message) => message.role === 'user');
-    if (!lastUserMessage) return '/shop';
-
-    const value = lastUserMessage.text.toLowerCase();
-    if (value.includes('gaming')) return '/shop?q=gaming';
-    if (value.includes('iphone')) return '/shop?q=iphone';
-    if (value.includes('samsung')) return '/shop?q=samsung';
-    if (value.includes('coque') || value.includes('cable') || value.includes('chargeur')) return '/shop?q=accessoires';
-    return '/shop';
-  }, [messages]);
 
   return (
     <div className="fixed bottom-5 right-4 z-[75] sm:bottom-6 sm:right-6">
@@ -99,7 +383,7 @@ export default function AIAssistantWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.95 }}
             transition={{ duration: 0.26, ease: [0.2, 0.8, 0.2, 1] }}
-            className="frost-panel mouse-follow-glow mb-3 w-[min(92vw,360px)] overflow-hidden rounded-3xl border border-soft shadow-2xl"
+            className="frost-panel mouse-follow-glow mb-3 w-[min(92vw,380px)] overflow-hidden rounded-3xl border border-soft shadow-2xl"
             onMouseMove={(event) => {
               const target = event.currentTarget;
               const rect = target.getBoundingClientRect();
@@ -121,11 +405,11 @@ export default function AIAssistantWidget() {
               </button>
             </header>
 
-            <div className="max-h-[380px] space-y-2 overflow-y-auto px-4 py-4">
+            <div className="max-h-[400px] space-y-2 overflow-y-auto px-4 py-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`ai-message-in max-w-[92%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+                  className={`ai-message-in max-w-[92%] whitespace-pre-line rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                     message.role === 'assistant'
                       ? 'bg-sky-500/15 text-primary'
                       : 'ml-auto bg-fuchsia-600 text-white'
@@ -165,7 +449,7 @@ export default function AIAssistantWidget() {
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') handleSend();
                   }}
-                  placeholder="Posez votre question..."
+                  placeholder="Budget, produit, prix..."
                   className="w-full rounded-xl border border-soft bg-surface-strong px-3 py-2 text-sm text-primary outline-none"
                 />
                 <button
@@ -179,7 +463,7 @@ export default function AIAssistantWidget() {
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-muted">
-                <Link to={latestSuggestion} className="font-semibold text-cyan-400 hover:text-cyan-300">
+                <Link to={suggestionHref} className="font-semibold text-cyan-400 hover:text-cyan-300">
                   Voir suggestion produits
                 </Link>
                 <a
@@ -212,7 +496,7 @@ export default function AIAssistantWidget() {
 
       {!open ? (
         <p className="mt-2 rounded-full bg-surface/95 px-3 py-1 text-[11px] font-semibold text-primary shadow-premium">
-          <MessageCircle size={12} className="mr-1 inline text-cyan-400" /> Besoin d’aide ?
+          <MessageCircle size={12} className="mr-1 inline text-cyan-400" /> Besoin d'aide ?
         </p>
       ) : null}
     </div>

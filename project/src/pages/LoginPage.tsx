@@ -1,5 +1,5 @@
 ﻿import { LockKeyhole, LogIn, Mail, Sparkles } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Seo from '../components/Seo';
@@ -16,9 +16,55 @@ export default function LoginPage() {
 
   const { signInWithEmail, signInWithGoogle, loading, usingSupabase } = useAuth();
 
+  const initialRole: LoginRole = redirect?.startsWith('/admin') ? 'admin' : 'client';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [expectedRole, setExpectedRole] = useState<LoginRole>('client');
+  const [expectedRole, setExpectedRole] = useState<LoginRole>(initialRole);
+  const [fieldNonce] = useState(() => Math.random().toString(36).slice(2));
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const emailEditedRef = useRef(false);
+
+  useEffect(() => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return;
+
+    if (!emailEditedRef.current && (normalizedEmail === ADMIN_EMAIL || normalizedEmail.includes('medismart'))) {
+      setEmail('');
+      setPassword('');
+      return;
+    }
+
+    if (normalizedEmail.includes('medismart')) {
+      setEmail('');
+    }
+  }, [email]);
+
+  useEffect(() => {
+    let attempts = 0;
+
+    const clearInjectedCredentials = () => {
+      attempts += 1;
+      const injectedEmail = emailRef.current?.value.trim().toLowerCase() || '';
+      const looksInjected = injectedEmail === ADMIN_EMAIL || injectedEmail.includes('medismart');
+
+      if (!emailEditedRef.current && looksInjected) {
+        setEmail('');
+        if (emailRef.current) {
+          emailRef.current.value = '';
+        }
+        if (passwordRef.current) {
+          passwordRef.current.value = '';
+        }
+      }
+
+      if (attempts < 8) {
+        window.setTimeout(clearInjectedCredentials, 150);
+      }
+    };
+
+    clearInjectedCredentials();
+  }, [expectedRole]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -26,7 +72,7 @@ export default function LoginPage() {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (expectedRole === 'admin' && normalizedEmail !== ADMIN_EMAIL) {
-      toast.error(`Compte admin autorise uniquement pour ${ADMIN_EMAIL}`);
+      toast.error('Compte admin non autorise.');
       return;
     }
 
@@ -66,7 +112,7 @@ export default function LoginPage() {
                 Connectez-vous en tant que client ou admin. Les privileges admin sont separes des comptes clients.
               </p>
 
-              <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <form onSubmit={handleSubmit} className="mt-6 space-y-4" autoComplete="off">
                 <div className="grid grid-cols-2 gap-2 rounded-2xl border border-soft bg-surface p-1">
                   <button
                     type="button"
@@ -92,8 +138,14 @@ export default function LoginPage() {
                   <label className="mb-1 block text-sm font-semibold text-secondary">Email</label>
                   <input
                     type="email"
+                    ref={emailRef}
+                    name={`fs-${expectedRole}-login-${fieldNonce}`}
+                    autoComplete="new-password"
                     value={email}
-                    onChange={(event) => setEmail(event.target.value)}
+                    onChange={(event) => {
+                      emailEditedRef.current = true;
+                      setEmail(event.target.value);
+                    }}
                     className="w-full rounded-xl border border-soft bg-surface-strong px-3 py-3 text-sm text-primary outline-none"
                     placeholder="email@gmail.com"
                     required
@@ -104,6 +156,9 @@ export default function LoginPage() {
                   <label className="mb-1 block text-sm font-semibold text-secondary">Mot de passe</label>
                   <input
                     type="password"
+                    ref={passwordRef}
+                    name={`fs-${expectedRole}-secret-${fieldNonce}`}
+                    autoComplete="new-password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     className="w-full rounded-xl border border-soft bg-surface-strong px-3 py-3 text-sm text-primary outline-none"

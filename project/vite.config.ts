@@ -1,7 +1,6 @@
 ﻿import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Keep React + charting in the same vendor chunk to avoid manualChunks load-order bugs.
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
@@ -13,25 +12,36 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
+          const moduleId = id.replaceAll('\\', '/');
 
           if (
-            id.includes('react') ||
-            id.includes('react-dom') ||
-            id.includes('react-router-dom') ||
-            id.includes('recharts')
+            moduleId.includes('/react/') ||
+            moduleId.includes('/react-dom/') ||
+            moduleId.includes('/react-router-dom/') ||
+            moduleId.includes('/react-is/') ||
+            moduleId.includes('/scheduler/')
           ) {
             return 'vendor-react';
           }
 
-          if (id.includes('framer-motion') || id.includes('gsap') || id.includes('lenis')) {
+          if (
+            moduleId.includes('/recharts/') ||
+            moduleId.includes('/d3-') ||
+            moduleId.includes('/decimal.js-light/') ||
+            moduleId.includes('/react-smooth/')
+          ) {
+            return 'admin-charts';
+          }
+
+          if (moduleId.includes('framer-motion') || moduleId.includes('gsap') || moduleId.includes('lenis')) {
             return 'motion-stack';
           }
 
-          if (id.includes('@supabase/supabase-js')) {
+          if (moduleId.includes('@supabase/supabase-js')) {
             return 'supabase';
           }
 
-          if (id.includes('lucide-react') || id.includes('react-hot-toast') || id.includes('react-helmet-async')) {
+          if (moduleId.includes('lucide-react') || moduleId.includes('react-hot-toast') || moduleId.includes('react-helmet-async')) {
             return 'ui-kit';
           }
         },

@@ -23,7 +23,7 @@ function resolveOpenStatus() {
   const isOpen = hour >= 8 && hour < 22;
   return {
     isOpen,
-    label: isOpen ? 'Ouvert maintenant' : 'Ferme maintenant',
+    label: isOpen ? 'Ouvert maintenant' : 'Fermé maintenant',
   };
 }
 
@@ -56,7 +56,9 @@ export default function StoreLocation({ compact = false, className = '' }: Store
                 <article className="absolute left-3 top-3 z-20 max-w-[74%] rounded-2xl border border-white/20 bg-slate-950/75 px-3 py-2 text-white shadow-2xl backdrop-blur-md sm:left-4 sm:top-4 sm:px-4 sm:py-3">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-300">Fifty Store</p>
                   <p className="mt-1 text-sm font-semibold">{STORE_LOCATION.address}</p>
-                  <p className="text-xs text-slate-200">{STORE_LOCATION.city}</p>
+                  {STORE_LOCATION.city !== STORE_LOCATION.address ? (
+                    <p className="text-xs text-slate-200">{STORE_LOCATION.city}</p>
+                  ) : null}
                   <p
                     className={`mt-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${
                       openStatus.isOpen ? 'bg-emerald-500/30 text-emerald-200' : 'bg-rose-500/25 text-rose-100'
@@ -83,14 +85,14 @@ export default function StoreLocation({ compact = false, className = '' }: Store
                       <p className="text-muted">{STORE_LOCATION.phone}</p>
                     </div>
                     <a href={`tel:${STORE_INFO.phoneLink}`} className="premium-btn-secondary !px-3 !py-2 text-[11px]">
-                      <Phone size={13} /> Call now
+                      <Phone size={13} /> Appeler
                     </a>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="flex h-72 w-full items-center justify-center bg-slate-100 text-slate-500 dark:bg-slate-900 dark:text-slate-300">
-                Add your Google Maps embed URL in STORE_LOCATION.embedMapUrl
+                Localisation disponible sur Google Maps
               </div>
             )}
           </div>
@@ -101,7 +103,9 @@ export default function StoreLocation({ compact = false, className = '' }: Store
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">Adresse boutique</p>
             <h3 className="mt-2 text-2xl font-bold text-primary">{STORE_LOCATION.name}</h3>
             <p className="mt-2 text-sm text-muted">{STORE_LOCATION.address}</p>
-            <p className="text-sm text-muted">{STORE_LOCATION.city}</p>
+            {STORE_LOCATION.city !== STORE_LOCATION.address ? (
+              <p className="text-sm text-muted">{STORE_LOCATION.city}</p>
+            ) : null}
             <p className="mt-2 text-sm text-secondary">Tel: {STORE_LOCATION.phone}</p>
           </div>
 
@@ -114,7 +118,7 @@ export default function StoreLocation({ compact = false, className = '' }: Store
             >
               <span className="inline-flex items-center gap-2">
                 <MapPin size={16} />
-                Open in Maps
+                Ouvrir Google Maps
               </span>
               <ExternalLink size={16} />
             </a>
@@ -122,7 +126,7 @@ export default function StoreLocation({ compact = false, className = '' }: Store
             <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="premium-btn-secondary w-full justify-between">
               <span className="inline-flex items-center gap-2">
                 <Navigation size={16} />
-                Get Directions
+                Itinéraire
               </span>
               <ExternalLink size={16} />
             </a>
@@ -130,7 +134,7 @@ export default function StoreLocation({ compact = false, className = '' }: Store
             <a href={`tel:${STORE_INFO.phoneLink}`} className="premium-btn-secondary w-full justify-between">
               <span className="inline-flex items-center gap-2">
                 <Phone size={16} />
-                Call now
+                Appeler
               </span>
               <Phone size={16} />
             </a>
@@ -143,7 +147,7 @@ export default function StoreLocation({ compact = false, className = '' }: Store
             >
               <span className="inline-flex items-center gap-2">
                 <MessageCircle size={16} />
-                WhatsApp quick contact
+                Contacter sur WhatsApp
               </span>
               <ExternalLink size={16} />
             </a>

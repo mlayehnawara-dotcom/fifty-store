@@ -1,5 +1,6 @@
 ﻿import type { ProductCategory } from '../data/products';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase, verifyFiftyStoreDatabase } from '../lib/supabase';
+import type { SocialMediaItem } from '../data/social';
 
 export interface AdminOrder {
   id: string;
@@ -47,51 +48,73 @@ interface ProductPayload {
   price: number;
   stock: number;
   image?: string;
+  description: string;
+  specs: string[];
+}
+
+interface SocialMediaPayload {
+  platform: SocialMediaItem['platform'];
+  image: string;
+  postUrl: string;
+  caption: string;
 }
 
 const validCategories: ProductCategory[] = [
-  'phones',
+  'iphones',
   'cases',
   'chargers',
   'headphones',
   'smartwatches',
-  'gaming',
+  'powerbanks',
+  'speakers',
   'accessories',
 ];
 
 function normalizeCategory(value: string): ProductCategory {
   const normalized = value.toLowerCase().trim();
+  if (normalized === 'phones' || normalized === 'smartphones') return 'iphones';
+  if (normalized === 'gaming') return 'accessories';
+  if (normalized === 'powerbank') return 'powerbanks';
+  if (normalized === 'baffle' || normalized === 'baffles' || normalized === 'speaker') return 'speakers';
   return validCategories.includes(normalized as ProductCategory)
     ? (normalized as ProductCategory)
     : 'accessories';
 }
 
-export async function createProductInSupabase(payload: ProductPayload): Promise<boolean> {
-  if (!isSupabaseConfigured || !supabase) return false;
+export async function createProductInSupabase(payload: ProductPayload): Promise<number | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+  if (!(await verifyFiftyStoreDatabase())) return null;
 
-  const { error } = await supabase.from('products').insert({
-    name: payload.name,
-    brand: payload.brand,
-    category: normalizeCategory(payload.category),
-    price: payload.price,
-    old_price: Math.round(payload.price * 1.1),
-    description: 'Produit ajoute depuis dashboard admin.',
-    image: payload.image || null,
-    image_url: payload.image || null,
-    stock: payload.stock,
-    rating: 4.5,
-    reviews: 0,
-    is_best_seller: false,
-    is_new: true,
-  });
+  const { data, error } = await supabase
+    .from('products')
+    .insert({
+      name: payload.name,
+      brand: payload.brand,
+      category: normalizeCategory(payload.category),
+      price: payload.price,
+      old_price: Math.round(payload.price * 1.1),
+      description: payload.description,
+      specs: payload.specs,
+      image: payload.image || null,
+      image_url: payload.image || null,
+      stock: payload.stock,
+      rating: 4.5,
+      reviews: 0,
+      is_best_seller: false,
+      is_new: true,
+    })
+    .select('id')
+    .single();
 
-  return !error;
+  if (error || !data?.id) return null;
+  return Number(data.id);
 }
 
 export async function updateProductInSupabase(productId: number, payload: Partial<ProductPayload>): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
+  if (!(await verifyFiftyStoreDatabase())) return false;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('products')
     .update({
       ...(payload.name ? { name: payload.name } : {}),
@@ -100,21 +123,53 @@ export async function updateProductInSupabase(productId: number, payload: Partia
       ...(typeof payload.price === 'number' ? { price: payload.price } : {}),
       ...(typeof payload.stock === 'number' ? { stock: payload.stock } : {}),
       ...(payload.image ? { image: payload.image, image_url: payload.image } : {}),
+      ...(typeof payload.description === 'string' ? { description: payload.description } : {}),
+      ...(Array.isArray(payload.specs) ? { specs: payload.specs } : {}),
     })
-    .eq('id', productId);
+    .eq('id', productId)
+    .select('id');
 
-  return !error;
+  return !error && Boolean(data?.length);
 }
 
 export async function deleteProductInSupabase(productId: number): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
+  if (!(await verifyFiftyStoreDatabase())) return false;
 
-  const { error } = await supabase.from('products').delete().eq('id', productId);
-  return !error;
+  const { data, error } = await supabase.from('products').delete().eq('id', productId).select('id');
+  return !error && Boolean(data?.length);
+}
+
+export async function createSocialMediaInSupabase(payload: SocialMediaPayload): Promise<string | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+  if (!(await verifyFiftyStoreDatabase())) return null;
+
+  const { data, error } = await supabase
+    .from('social_media')
+    .insert({
+      platform: payload.platform,
+      image_url: payload.image,
+      post_url: payload.postUrl,
+      caption: payload.caption,
+    })
+    .select('id')
+    .single();
+
+  if (error || !data?.id) return null;
+  return String(data.id);
+}
+
+export async function deleteSocialMediaInSupabase(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  if (!(await verifyFiftyStoreDatabase())) return false;
+
+  const { data, error } = await supabase.from('social_media').delete().eq('id', id).select('id');
+  return !error && Boolean(data?.length);
 }
 
 export async function fetchOrdersFromSupabase(): Promise<AdminOrder[]> {
   if (!isSupabaseConfigured || !supabase) return [];
+  if (!(await verifyFiftyStoreDatabase())) return [];
 
   const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(120);
   if (error || !data) return [];
@@ -134,6 +189,7 @@ export async function fetchOrdersFromSupabase(): Promise<AdminOrder[]> {
 
 export async function updateOrderStatusInSupabase(orderId: string, status: AdminOrder['status']): Promise<boolean> {
   if (!isSupabaseConfigured || !supabase) return false;
+  if (!(await verifyFiftyStoreDatabase())) return false;
 
   const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
   return !error;
@@ -141,6 +197,7 @@ export async function updateOrderStatusInSupabase(orderId: string, status: Admin
 
 export async function fetchCustomersFromSupabase(): Promise<AdminCustomer[]> {
   if (!isSupabaseConfigured || !supabase) return [];
+  if (!(await verifyFiftyStoreDatabase())) return [];
 
   const { data, error } = await supabase.from('customers').select('*').limit(300);
   if (error || !data) return [];

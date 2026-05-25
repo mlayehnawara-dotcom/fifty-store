@@ -1,4 +1,4 @@
-﻿import { Facebook, Instagram, LogIn, Mail, MessageCircle, Phone, Shield, Youtube } from 'lucide-react';
+﻿import { Facebook, Instagram, LogIn, Mail, MessageCircle, Phone, Shield, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { STORE_INFO } from '../data/store';
@@ -46,8 +46,14 @@ export default function Footer() {
             >
               <Instagram size={16} />
             </a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="premium-btn-secondary !p-2">
-              <Youtube size={16} />
+            <a
+              href={STORE_INFO.tiktokUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="TikTok Fifty Store"
+              className="premium-btn-secondary !p-2"
+            >
+              <Video size={16} />
             </a>
             <a
               href={`https://wa.me/${STORE_INFO.whatsappNumber}`}

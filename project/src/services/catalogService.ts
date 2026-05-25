@@ -1,5 +1,6 @@
 ﻿import { categories as localCategories, products as localProducts, type Category, type Product, type ProductCategory } from '../data/products';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase, verifyFiftyStoreDatabase } from '../lib/supabase';
+import { type SocialMediaItem, type SocialPlatform } from '../data/social';
 
 export type CatalogSource = 'supabase' | 'local';
 
@@ -32,18 +33,32 @@ interface SupabaseCategoryRow {
   name?: string | null;
 }
 
+interface SupabaseSocialMediaRow {
+  id: number | string;
+  platform?: string | null;
+  image_url?: string | null;
+  post_url?: string | null;
+  caption?: string | null;
+  created_at?: string | null;
+}
+
 const validCategories: ProductCategory[] = [
-  'phones',
+  'iphones',
   'cases',
   'chargers',
   'headphones',
   'smartwatches',
-  'gaming',
+  'powerbanks',
+  'speakers',
   'accessories',
 ];
 
 function normalizeCategory(raw: string | null | undefined): ProductCategory {
   const normalized = (raw || '').toLowerCase().trim();
+  if (normalized === 'phones' || normalized === 'smartphones') return 'iphones';
+  if (normalized === 'gaming') return 'accessories';
+  if (normalized === 'powerbank') return 'powerbanks';
+  if (normalized === 'baffle' || normalized === 'baffles' || normalized === 'speaker') return 'speakers';
   if (validCategories.includes(normalized as ProductCategory)) {
     return normalized as ProductCategory;
   }
@@ -104,8 +119,30 @@ function safeLocalCategories(): Category[] {
   return localCategories;
 }
 
+function normalizeSocialPlatform(value: string | null | undefined): SocialPlatform {
+  return value?.toLowerCase().trim() === 'instagram' ? 'instagram' : 'tiktok';
+}
+
+function mapSocialMediaRow(row: SupabaseSocialMediaRow): SocialMediaItem | null {
+  if (!row.image_url?.trim() || !row.post_url?.trim()) return null;
+
+  return {
+    id: String(row.id),
+    platform: normalizeSocialPlatform(row.platform),
+    image: row.image_url.trim(),
+    postUrl: row.post_url.trim(),
+    caption: row.caption?.trim() || 'Publication Fifty Store',
+    createdAt: row.created_at || new Date().toISOString(),
+  };
+}
+
 export async function fetchCatalogProducts(): Promise<{ products: Product[]; source: CatalogSource }> {
   if (!isSupabaseConfigured || !supabase) {
+    return { products: safeLocalProducts(), source: 'local' };
+  }
+
+  const verified = await verifyFiftyStoreDatabase();
+  if (!verified) {
     return { products: safeLocalProducts(), source: 'local' };
   }
 
@@ -116,6 +153,7 @@ export async function fetchCatalogProducts(): Promise<{ products: Product[]; sou
   }
 
   const mapped = (data as SupabaseProductRow[])
+    .filter((row) => row.category?.toLowerCase().trim() !== 'gaming')
     .map((row) => mapProductRow(row))
     .filter((product) => Number.isFinite(product.id));
 
@@ -131,6 +169,11 @@ export async function fetchCatalogCategories(): Promise<Category[]> {
     return safeLocalCategories();
   }
 
+  const verified = await verifyFiftyStoreDatabase();
+  if (!verified) {
+    return safeLocalCategories();
+  }
+
   const { data, error } = await supabase.from('categories').select('*');
   if (error || !data || data.length === 0) {
     return safeLocalCategories();
@@ -139,7 +182,7 @@ export async function fetchCatalogCategories(): Promise<Category[]> {
   const mapped = (data as SupabaseCategoryRow[])
     .map((row) => {
       const rawId = (row.slug || row.id || '').toLowerCase().trim();
-      const id = rawId as ProductCategory | 'all';
+      const id = (rawId === 'phones' ? 'iphones' : rawId) as ProductCategory | 'all';
 
       if (id !== 'all' && !validCategories.includes(id as ProductCategory)) {
         return null;
@@ -156,6 +199,18 @@ export async function fetchCatalogCategories(): Promise<Category[]> {
   return hasAll ? mapped : [safeLocalCategories()[0], ...mapped];
 }
 
+export async function fetchSocialMedia(): Promise<SocialMediaItem[]> {
+  if (!isSupabaseConfigured || !supabase) return [];
+  if (!(await verifyFiftyStoreDatabase())) return [];
+
+  const { data, error } = await supabase.from('social_media').select('*').order('created_at', { ascending: false }).limit(12);
+  if (error || !data) return [];
+
+  return (data as SupabaseSocialMediaRow[])
+    .map((row) => mapSocialMediaRow(row))
+    .filter((item): item is SocialMediaItem => Boolean(item));
+}
+
 export function subscribeToCatalogChanges(onChange: () => void): () => void {
   const client = supabase;
 
@@ -166,6 +221,7 @@ export function subscribeToCatalogChanges(onChange: () => void): () => void {
   const channel = client
     .channel('catalog-products-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => onChange())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'social_media' }, () => onChange())
     .subscribe();
 
   return () => {

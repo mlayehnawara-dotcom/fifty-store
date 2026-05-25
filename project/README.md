@@ -69,8 +69,9 @@ npm run dev
 
 ### Backend (Supabase)
 
-- Backend utilise Supabase (pas de backend Node local dans ce projet).
+- Backend utilise un projet Supabase dedie a **Fifty Store** (pas le projet Medismart ou un autre projet).
 - Dashboard: `https://supabase.com/dashboard`
+- SQL schema a lancer dans le nouveau projet Supabase: `supabase/fifty-store-schema.sql`
 - Variables obligatoires dans `.env`:
 
 ```env
@@ -102,6 +103,9 @@ VITE_SITE_URL=https://fifty-store.tn
 
 If Supabase is missing/unavailable, the app automatically falls back to local mock/localStorage mode.
 
+Important: the app verifies the database identity through `public.app_settings`.
+The database must contain `store_slug = fifty-store`; otherwise the app refuses to read/write Supabase and falls back to local mode. This prevents accidentally using the Medismart database.
+
 ## Supabase Files
 
 - `src/lib/supabase.ts` (TypeScript app integration)
@@ -109,7 +113,14 @@ If Supabase is missing/unavailable, the app automatically falls back to local mo
 
 ## Required Supabase Tables
 
-Create these tables in `public` schema:
+Run `supabase/fifty-store-schema.sql` in a fresh Supabase project. It creates these tables in `public` schema and inserts the Fifty Store identity:
+
+0. `app_settings`
+- `key` (text primary key)
+- `value` (text)
+- required row: `store_slug = fifty-store`
+
+Tables:
 
 1. `products`
 - `id` (bigint, primary key)
@@ -173,6 +184,14 @@ Create these tables in `public` schema:
 - `created_at` (timestamp, default now())
 - Unique index on `(user_id, product_id)`
 
+7. `social_media`
+- `id` (bigint, primary key)
+- `platform` (`instagram` or `tiktok`)
+- `image_url` (text)
+- `post_url` (text)
+- `caption` (text)
+- `created_at` (timestamp, default now())
+
 ## Current Supabase Integrations
 
 ### Products
@@ -197,6 +216,7 @@ Create these tables in `public` schema:
 - Add product (local + Supabase sync when available)
 - Edit product price (local + Supabase sync)
 - Delete product (local + Supabase sync)
+- Add/delete authentic Instagram or TikTok images in `Photos social` (local + Supabase sync)
 - Orders can be loaded from Supabase
 - Order status updates are synced to Supabase
 
@@ -225,6 +245,7 @@ Added/updated:
 ### Vercel
 
 - Config file: `vercel.json`
+- Root directory on Vercel: `project`
 - Build command: `npm run build`
 - Output: `dist`
 
@@ -241,6 +262,13 @@ Added/updated:
 
 - Preferred: Supabase `products` table
 - Fallback/mock source: `src/data/products.ts`
+
+### Update authentic social photos
+
+- Open Admin > `Photos social`
+- Import a real image saved from the Fifty Store Instagram/TikTok publication
+- Paste the official publication URL and a short caption
+- When Supabase is enabled, the image entry is written to `social_media` and displayed on the homepage
 
 ### Update store location/contact
 
@@ -260,4 +288,3 @@ Edit `src/components/chat/AIAssistantWidget.tsx` in `buildAssistantReply()`.
 
 - `npm run typecheck`: ✅
 - `npm run build`: ✅
-

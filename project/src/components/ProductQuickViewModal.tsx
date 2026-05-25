@@ -3,6 +3,7 @@ import { CheckCircle2, MessageCircle, ShoppingCart, Star, X } from 'lucide-react
 import { useCart } from '../context/CartContext';
 import type { Product } from '../data/products';
 import { formatPrice } from '../utils/format';
+import { buildDirectProductMessage, openWhatsApp } from '../utils/whatsapp';
 import OptimizedImage from './ui/OptimizedImage';
 
 interface ProductQuickViewModalProps {
@@ -89,10 +90,10 @@ export default function ProductQuickViewModal({ product, open, onClose }: Produc
                   </button>
                   <button
                     type="button"
-                    onClick={() => window.open(`/product/${product.id}`, '_self')}
+                    onClick={() => openWhatsApp(buildDirectProductMessage(product))}
                     className="premium-btn-secondary justify-center"
                   >
-                    <MessageCircle size={15} /> Voir details
+                    <MessageCircle size={15} /> Commander
                   </button>
                 </div>
               </div>

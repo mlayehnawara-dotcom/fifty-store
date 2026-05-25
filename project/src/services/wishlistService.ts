@@ -1,7 +1,8 @@
-﻿import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isSupabaseConfigured, supabase, verifyFiftyStoreDatabase } from '../lib/supabase';
 
 export async function fetchUserWishlistIds(userId: string): Promise<number[]> {
   if (!isSupabaseConfigured || !supabase) return [];
+  if (!(await verifyFiftyStoreDatabase())) return [];
 
   const { data, error } = await supabase.from('wishlist').select('product_id').eq('user_id', userId);
   if (error || !data) {
@@ -15,6 +16,7 @@ export async function fetchUserWishlistIds(userId: string): Promise<number[]> {
 
 export async function addWishlistItem(userId: string, productId: number): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return;
+  if (!(await verifyFiftyStoreDatabase())) return;
 
   await supabase.from('wishlist').upsert(
     {
@@ -27,6 +29,7 @@ export async function addWishlistItem(userId: string, productId: number): Promis
 
 export async function removeWishlistItem(userId: string, productId: number): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return;
+  if (!(await verifyFiftyStoreDatabase())) return;
 
   await supabase.from('wishlist').delete().eq('user_id', userId).eq('product_id', productId);
 }

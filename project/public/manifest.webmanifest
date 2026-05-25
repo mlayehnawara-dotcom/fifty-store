@@ -1,7 +1,7 @@
 ﻿{
   "name": "Fifty Store",
   "short_name": "FiftyStore",
-  "description": "Boutique tunisienne premium de smartphones et accessoires.",
+  "description": "Boutique tunisienne premium de iPhones, smartwatches et accessoires.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f0b16",

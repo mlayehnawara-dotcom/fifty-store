@@ -1,6 +1,7 @@
 ﻿/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import toast from 'react-hot-toast';
+import { createStableContext } from './stableContext';
 
 export type Theme = 'light' | 'dark';
 
@@ -12,7 +13,7 @@ interface ThemeContextType {
 }
 
 const THEME_STORAGE_KEY = 'fifty-store-theme';
-const ThemeContext = createContext<ThemeContextType | null>(null);
+const ThemeContext = createStableContext<ThemeContextType>('theme');
 
 function resolveInitialTheme(): Theme {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);

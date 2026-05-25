@@ -6,6 +6,8 @@ interface OptimizedImageProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, 
   sizes?: string;
 }
 
+const IMAGE_FALLBACK = '/fifty-store-logo.png';
+
 function optimizePexelsUrl(src: string, width?: number): string {
   try {
     const url = new URL(src);
@@ -51,6 +53,7 @@ export default function OptimizedImage({
 }: OptimizedImageProps) {
   const optimizedSrc = src.includes('images.pexels.com') ? optimizePexelsUrl(src) : src;
   const srcSet = buildPexelsSrcSet(src);
+  const fetchPriorityValue = fetchPriority ?? (priority ? 'high' : 'auto');
 
   return (
     <img
@@ -60,8 +63,18 @@ export default function OptimizedImage({
       sizes={srcSet ? sizes : undefined}
       loading={loading ?? (priority ? 'eager' : 'lazy')}
       decoding={decoding ?? 'async'}
-      fetchPriority={fetchPriority ?? (priority ? 'high' : 'auto')}
+      {...({ fetchpriority: fetchPriorityValue } as Record<string, string>)}
       {...props}
+      onError={(event) => {
+        if (event.currentTarget.src.includes(IMAGE_FALLBACK)) {
+          props.onError?.(event);
+          return;
+        }
+
+        event.currentTarget.removeAttribute('srcset');
+        event.currentTarget.src = IMAGE_FALLBACK;
+        props.onError?.(event);
+      }}
     />
   );
 }

@@ -1,5 +1,6 @@
 ﻿/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createStableContext } from './stableContext';
 
 const COMPARE_STORAGE_KEY = 'fifty-store-compare-v1';
 
@@ -11,7 +12,7 @@ interface CompareContextType {
   clearCompare: () => void;
 }
 
-const CompareContext = createContext<CompareContextType | null>(null);
+const CompareContext = createStableContext<CompareContextType>('compare');
 
 function readCompareIds(): number[] {
   try {

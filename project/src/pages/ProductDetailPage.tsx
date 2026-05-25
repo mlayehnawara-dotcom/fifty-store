@@ -9,7 +9,6 @@
   ShoppingCart,
   Star,
   Truck,
-  Users,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -20,7 +19,7 @@ import { useCart } from '../context/CartContext';
 import { STORE_INFO } from '../data/store';
 import { addRecentlyViewed } from '../utils/recentlyViewed';
 import { formatPrice } from '../utils/format';
-import { openWhatsApp } from '../utils/whatsapp';
+import { buildDirectProductMessage, openWhatsApp } from '../utils/whatsapp';
 import OptimizedImage from '../components/ui/OptimizedImage';
 
 export default function ProductDetailPage() {
@@ -72,20 +71,7 @@ export default function ProductDetailPage() {
     );
   }
 
-  const directOrderMessage = [
-    'Bonjour Fifty Store,',
-    '',
-    'Je souhaite commander ce produit:',
-    `Produit: ${product.name}`,
-    `Marque: ${product.brand}`,
-    `Prix unitaire: ${formatPrice(product.price)}`,
-    `Quantite: ${quantity}`,
-    `Total: ${formatPrice(product.price * quantity)}`,
-    `Paiement: ${STORE_INFO.paymentLabel}`,
-    `Livraison: ${STORE_INFO.deliveryLabel}`,
-  ].join('\n');
-
-  const liveVisitors = 12 + ((product.id * 17) % 29);
+  const directOrderMessage = buildDirectProductMessage(product, quantity);
 
   return (
     <>
@@ -162,9 +148,7 @@ export default function ProductDetailPage() {
                   <Star size={14} className="fill-current" /> {product.rating.toFixed(1)}
                 </span>
                 <span>({product.reviews} avis)</span>
-                <span className="ml-auto inline-flex items-center gap-1 text-cyan-400">
-                  <Users size={13} /> {liveVisitors} consultent ce produit
-                </span>
+                <span className="ml-auto text-cyan-400">Stock: {product.stock}</span>
               </div>
 
               <div className="mt-5 flex items-end gap-3 border-y border-soft py-4">
