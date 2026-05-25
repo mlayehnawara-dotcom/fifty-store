@@ -24,15 +24,6 @@ export default defineConfig({
             return 'vendor-react';
           }
 
-          if (
-            moduleId.includes('/recharts/') ||
-            moduleId.includes('/d3-') ||
-            moduleId.includes('/decimal.js-light/') ||
-            moduleId.includes('/react-smooth/')
-          ) {
-            return 'admin-charts';
-          }
-
           if (moduleId.includes('framer-motion') || moduleId.includes('gsap') || moduleId.includes('lenis')) {
             return 'motion-stack';
           }
