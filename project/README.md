@@ -248,6 +248,14 @@ Added/updated:
 - Root directory on Vercel: `project`
 - Build command: `npm run build`
 - Output: `dist`
+- Production URL: `https://fifty-store.vercel.app`
+- A push to GitHub branch `main` triggers the Vercel production deployment automatically.
+
+### Content sync versus code deploy
+
+- Product, price and social-photo changes made in Admin are business data: with Supabase configured, they are saved to the Fifty Store database and appear on the live site without a GitHub push.
+- UI/code changes are versioned in GitHub, then Vercel publishes the new build after the push to `main`.
+- Do not place a GitHub token inside the frontend to push from the admin browser; it would expose repository access to visitors.
 
 ### Netlify
 
